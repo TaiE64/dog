@@ -17,7 +17,7 @@ from isaaclab.utils import configclass
 
 from unitree_rl_lab.assets.robots import unitree_actuators
 
-UNITREE_MODEL_DIR = "path/to/unitree_model"  # Replace with the actual path to your unitree_model directory
+UNITREE_MODEL_DIR = "/home/taie/unitree_rl_lab/unitree_model"
 UNITREE_ROS_DIR = "path/to/unitree_ros"  # Replace with the actual path to your unitree_ros package
 
 
@@ -90,6 +90,9 @@ class UnitreeUrdfFileCfg(sim_utils.UrdfFileCfg):
         os.symlink(urdf_path, self.asset_path)
 
 
+DIY_LEG_URDF = "/home/taie/unitree_rl_lab/leg_manipulator/urdf/go2_with_diy_leg.urdf"
+DIY_LEG_USD = "/home/taie/unitree_rl_lab/leg_manipulator/urdf/go2_with_diy_leg/go2_with_diy_leg.usd"
+
 """ Configuration for the Unitree robots."""
 
 UNITREE_GO2_CFG = UnitreeArticulationCfg(
@@ -124,6 +127,59 @@ UNITREE_GO2_CFG = UnitreeArticulationCfg(
         "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
         "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint",
         "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint"
+    ],
+    # fmt: on
+)
+
+UNITREE_GO2_DIY_LEG_CFG = UnitreeArticulationCfg(
+    spawn=UnitreeUrdfFileCfg(
+        asset_path=DIY_LEG_URDF,
+    ),
+    init_state=ArticulationCfg.InitialStateCfg(
+        pos=(0.0, 0.0, 0.4),
+        joint_pos={
+            ".*_hip_joint": 0.0,
+            "F[L,R]_thigh_joint": 0.543,
+            "R[L,R]_thigh_joint": 0.905,
+            "F[L,R]_calf_joint": -2.07,
+            "R[L,R]_calf_joint": -1.78,
+            ".*diy_joint1": 0.1,
+            ".*diy_joint2": 0.0,
+            ".*diy_joint3": 0.0,
+            ".*diy_joint4": 0.0,
+        },
+        joint_vel={".*": 0.0},
+    ),
+    actuators={
+        "GO2_legs": unitree_actuators.UnitreeActuatorCfg_Go2HV(
+            joint_names_expr=[".*_hip_joint", ".*_thigh_joint", ".*_calf_joint"],
+            stiffness=25.0,
+            damping=0.5,
+            friction=0.01,
+        ),
+        "diy_prismatic": IdealPDActuatorCfg(
+            joint_names_expr=[".*diy_joint1"],
+            effort_limit=40.0,
+            velocity_limit=0.01,
+            stiffness=100.0,
+            damping=5.0,
+        ),
+        "diy_revolute": IdealPDActuatorCfg(
+            joint_names_expr=[".*diy_joint2", ".*diy_joint3", ".*diy_joint4"],
+            effort_limit=5.0,
+            velocity_limit=10.0,
+            stiffness=10.0,
+            damping=0.5,
+        ),
+    },
+    # fmt: off
+    joint_sdk_names=[
+        "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
+        "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
+        "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint",
+        "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint",
+        "diy_joint1", "diy_joint2", "diy_joint3", "diy_joint4",
+        "FL_diy_joint1", "FL_diy_joint2", "FL_diy_joint3", "FL_diy_joint4",
     ],
     # fmt: on
 )

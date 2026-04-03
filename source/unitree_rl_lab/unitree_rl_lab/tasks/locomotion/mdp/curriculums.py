@@ -37,6 +37,35 @@ def lin_vel_cmd_levels(
     return torch.tensor(ranges.lin_vel_x[1], device=env.device)
 
 
+_diy_last_upgrade_step = -1
+
+
+def diy_randomization_levels(
+    env: ManagerBasedRLEnv,
+    env_ids: Sequence[int],
+    event_term_name: str = "randomize_diy_joints",
+    max_position_range: float = 1.5,
+    step_size: float = 0.1,
+    upgrade_interval: int = 1000,
+) -> torch.Tensor:
+    """Curriculum that increases diy joint randomization range every N steps."""
+    global _diy_last_upgrade_step
+    event_term = env.event_manager.get_term_cfg(event_term_name)
+    current_range = event_term.params["position_range"][1]
+
+    if _diy_last_upgrade_step < 0:
+        _diy_last_upgrade_step = env.common_step_counter
+
+    if env.common_step_counter - _diy_last_upgrade_step >= upgrade_interval:
+        if current_range < max_position_range:
+            new_range = min(current_range + step_size, max_position_range)
+            event_term.params["position_range"] = (-new_range, new_range)
+        _diy_last_upgrade_step = env.common_step_counter
+
+    current_range = event_term.params["position_range"][1]
+    return torch.tensor(current_range, device=env.device)
+
+
 def ang_vel_cmd_levels(
     env: ManagerBasedRLEnv,
     env_ids: Sequence[int],
