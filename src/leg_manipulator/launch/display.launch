@@ -1,0 +1,13 @@
+<launch>
+    <param name="robot_description" textfile="$(find leg_manipulator)/urdf/go2_with_diy_leg.urdf"/>
+
+    <node pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" name="joint_state_publisher_gui">
+        <param name="use_gui" value="true"/>
+        <rosparam command="load" file="$(find leg_manipulator)/config/default_joint_angles.yaml"/>
+    </node>
+
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/>
+
+    <node pkg="rviz" type="rviz" name="rviz" respawn="false" output="screen"
+        args="-d $(find leg_manipulator)/config/display.rviz"/>
+</launch>
