@@ -90,7 +90,7 @@
     <parent link="base" />
     <child link="FL_hip" />
     <axis xyz="1 0 0" />
-    <limit lower="-1.0472" upper="1.0472" effort="100.0" velocity="30.1" />
+    <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
   </joint>
   <link name="FL_hip_rotor">
     <inertial>
@@ -128,7 +128,7 @@
     <parent link="FL_hip" />
     <child link="FL_thigh" />
     <axis xyz="0 1 0" />
-    <limit lower="-1.5708" upper="3.4907" effort="100.0" velocity="30.1" />
+    <limit lower="-1.5708" upper="3.4907" effort="23.7" velocity="30.1" />
   </joint>
   <link name="FL_thigh_rotor">
     <inertial>
@@ -149,7 +149,7 @@
     <parent link="FL_thigh" />
     <child link="FL_diy_base_link" />
     <axis xyz="0 1 0" />
-    <limit lower="-2.9" upper="-1.2" effort="100.0" velocity="15.70" />
+    <limit lower="-2.9" upper="-1.2" effort="45.43" velocity="15.70" />
   </joint>
 
   <link name="FL_diy_base_link">
@@ -326,7 +326,7 @@
     <parent link="base" />
     <child link="FR_hip" />
     <axis xyz="1 0 0" />
-    <limit lower="-1.0472" upper="1.0472" effort="100.0" velocity="30.1" />
+    <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
   </joint>
   <link name="FR_hip_rotor">
     <inertial>
@@ -364,7 +364,7 @@
     <parent link="FR_hip" />
     <child link="FR_thigh" />
     <axis xyz="0 1 0" />
-    <limit lower="-1.5708" upper="3.4907" effort="100.0" velocity="30.1" />
+    <limit lower="-1.5708" upper="3.4907" effort="23.7" velocity="30.1" />
   </joint>
   <link name="FR_thigh_rotor">
     <inertial>
@@ -390,7 +390,7 @@
     <parent link="FR_thigh" />
     <child link="diy_base_link" />
     <axis xyz="0 1 0" />
-    <limit lower="-2.9" upper="-1.2" effort="100.0" velocity="15.70" />
+    <limit lower="-2.9" upper="-1.2" effort="45.43" velocity="15.70" />
   </joint>
 
   <link name="diy_base_link">
@@ -566,7 +566,7 @@
     <parent link="base" />
     <child link="RL_hip" />
     <axis xyz="1 0 0" />
-    <limit lower="-1.0472" upper="1.0472" effort="100.0" velocity="30.1" />
+    <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
   </joint>
   <link name="RL_hip_rotor">
     <inertial>
@@ -604,7 +604,7 @@
     <parent link="RL_hip" />
     <child link="RL_thigh" />
     <axis xyz="0 1 0" />
-    <limit lower="-0.5236" upper="4.5379" effort="100.0" velocity="30.1" />
+    <limit lower="-0.5236" upper="4.5379" effort="23.7" velocity="30.1" />
   </joint>
   <link name="RL_thigh_rotor">
     <inertial>
@@ -642,7 +642,7 @@
     <parent link="RL_thigh" />
     <child link="RL_calf" />
     <axis xyz="0 1 0" />
-    <limit lower="-2.7227" upper="-0.83776" effort="100.0" velocity="15.70" />
+    <limit lower="-2.7227" upper="-0.83776" effort="45.43" velocity="15.70" />
   </joint>
   <link name="RL_calflower">
     <collision>
@@ -735,7 +735,7 @@
     <parent link="base" />
     <child link="RR_hip" />
     <axis xyz="1 0 0" />
-    <limit lower="-1.0472" upper="1.0472" effort="100.0" velocity="30.1" />
+    <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
   </joint>
   <link name="RR_hip_rotor">
     <inertial>
@@ -773,7 +773,7 @@
     <parent link="RR_hip" />
     <child link="RR_thigh" />
     <axis xyz="0 1 0" />
-    <limit lower="-0.5236" upper="4.5379" effort="100.0" velocity="30.1" />
+    <limit lower="-0.5236" upper="4.5379" effort="23.7" velocity="30.1" />
   </joint>
   <link name="RR_thigh_rotor">
     <inertial>
@@ -811,7 +811,7 @@
     <parent link="RR_thigh" />
     <child link="RR_calf" />
     <axis xyz="0 1 0" />
-    <limit lower="-2.7227" upper="-0.83776" effort="100.0" velocity="15.70" />
+    <limit lower="-2.7227" upper="-0.83776" effort="45.43" velocity="15.70" />
   </joint>
   <link name="RR_calflower">
     <collision>
@@ -883,8 +883,8 @@
   <link name="imu">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0" />
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+      <mass value="0.001" />
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
     </inertial>
   </link>
   <joint name="imu_joint" type="fixed">
@@ -896,8 +896,8 @@
   <link name="radar">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0" />
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+      <mass value="0.001" />
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
     </inertial>
   </link>
   <joint name="radar_joint" type="fixed">
@@ -913,6 +913,24 @@
   </joint>
   <link name="front_camera">
   </link>
+
+  <!-- ==================== IMU Sensor ==================== -->
+  <gazebo reference="imu">
+    <sensor name="imu_sensor" type="imu">
+      <always_on>true</always_on>
+      <update_rate>200</update_rate>
+      <plugin name="imu_plugin" filename="libgazebo_ros_imu_sensor.so">
+        <topicName>/imu/data</topicName>
+        <frameName>imu</frameName>
+        <bodyName>imu</bodyName>
+        <updateRateHZ>200</updateRateHZ>
+        <gaussianNoise>0.0</gaussianNoise>
+        <xyzOffset>0 0 0</xyzOffset>
+        <rpyOffset>0 0 0</rpyOffset>
+        <initialOrientationAsReference>false</initialOrientationAsReference>
+      </plugin>
+    </sensor>
+  </gazebo>
 
   <!-- ==================== Gazebo ros_control plugin ==================== -->
   <gazebo>
