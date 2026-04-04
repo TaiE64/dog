@@ -19,7 +19,7 @@
   <depend>xacro</depend>
   <depend>gazebo_plugins</depend>
   <depend>controller_manager</depend>
-  <depend>position_controllers</depend>
+  <depend>effort_controllers</depend>
   <depend>joint_state_controller</depend>
   <depend>controller_manager_msgs</depend>
 

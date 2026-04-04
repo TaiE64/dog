@@ -17,29 +17,18 @@ GO2_JOINTS = [
     'RR_hip_joint', 'RR_thigh_joint', 'RR_calf_joint',
 ]
 
-DIY_JOINTS = [
-    'FL_diy_joint1', 'FL_diy_joint2', 'FL_diy_joint3', 'FL_diy_joint4',
-    'diy_joint1', 'diy_joint2', 'diy_joint3', 'diy_joint4',
-]
-
-ALL_JOINTS = GO2_JOINTS + DIY_JOINTS
-
 
 def joint_to_controller(joint_name):
-    """Map joint name to controller name."""
-    if joint_name in GO2_JOINTS:
-        return joint_name.replace('_joint', '_controller')
-    else:
-        return joint_name + '_controller'
+    return joint_name.replace('_joint', '_controller')
 
 
 def wait_for_controllers():
-    """Wait until all joint controllers are running."""
+    """Wait until all 12 Go2 joint controllers are running."""
     rospy.loginfo('Waiting for controllers to be ready...')
     rospy.wait_for_service('/controller_manager/list_controllers')
     list_ctrl = rospy.ServiceProxy('/controller_manager/list_controllers', ListControllers)
 
-    expected = set(joint_to_controller(j) for j in ALL_JOINTS)
+    expected = set(joint_to_controller(j) for j in GO2_JOINTS)
     rate = rospy.Rate(5)
     while not rospy.is_shutdown():
         resp = list_ctrl()
@@ -72,9 +61,9 @@ def main():
         config = yaml.safe_load(f)
     angles = config.get('default_joint_angles', {})
 
-    # Create publishers
+    # Create publishers for Go2 joints only
     pubs = {}
-    for joint in ALL_JOINTS:
+    for joint in GO2_JOINTS:
         ctrl_name = joint_to_controller(joint)
         topic = '/{}/command'.format(ctrl_name)
         pubs[joint] = rospy.Publisher(topic, Float64, queue_size=1)
@@ -82,18 +71,18 @@ def main():
     # Wait for all controllers to be running
     wait_for_controllers()
 
-    # Pre-publish commands before unpausing (fills the topic buffer)
-    for joint in ALL_JOINTS:
+    # Pre-publish commands before unpausing
+    for joint in GO2_JOINTS:
         pubs[joint].publish(Float64(angles.get(joint, 0.0)))
     rospy.sleep(0.5)
 
-    # Now unpause - robot starts falling but controllers are already active
+    # Now unpause
     unpause_gazebo()
 
     rospy.loginfo('Standing up: publishing joint angles')
     rate = rospy.Rate(50)
     while not rospy.is_shutdown():
-        for joint in ALL_JOINTS:
+        for joint in GO2_JOINTS:
             pubs[joint].publish(Float64(angles.get(joint, 0.0)))
         rate.sleep()
 

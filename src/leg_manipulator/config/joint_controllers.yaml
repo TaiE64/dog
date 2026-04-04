@@ -5,86 +5,64 @@ joint_state_controller:
 
 # --- FL leg ---
 FL_hip_controller:
-  type: position_controllers/JointPositionController
+  type: effort_controllers/JointPositionController
   joint: FL_hip_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
 
 FL_thigh_controller:
-  type: position_controllers/JointPositionController
+  type: effort_controllers/JointPositionController
   joint: FL_thigh_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
 
 FL_calf_controller:
-  type: position_controllers/JointPositionController
+  type: effort_controllers/JointPositionController
   joint: FL_calf_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
 
 # --- FR leg ---
 FR_hip_controller:
-  type: position_controllers/JointPositionController
+  type: effort_controllers/JointPositionController
   joint: FR_hip_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
 
 FR_thigh_controller:
-  type: position_controllers/JointPositionController
+  type: effort_controllers/JointPositionController
   joint: FR_thigh_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
 
 FR_calf_controller:
-  type: position_controllers/JointPositionController
+  type: effort_controllers/JointPositionController
   joint: FR_calf_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
 
 # --- RL leg ---
 RL_hip_controller:
-  type: position_controllers/JointPositionController
+  type: effort_controllers/JointPositionController
   joint: RL_hip_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
 
 RL_thigh_controller:
-  type: position_controllers/JointPositionController
+  type: effort_controllers/JointPositionController
   joint: RL_thigh_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
 
 RL_calf_controller:
-  type: position_controllers/JointPositionController
+  type: effort_controllers/JointPositionController
   joint: RL_calf_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
 
 # --- RR leg ---
 RR_hip_controller:
-  type: position_controllers/JointPositionController
+  type: effort_controllers/JointPositionController
   joint: RR_hip_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
 
 RR_thigh_controller:
-  type: position_controllers/JointPositionController
+  type: effort_controllers/JointPositionController
   joint: RR_thigh_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
 
 RR_calf_controller:
-  type: position_controllers/JointPositionController
+  type: effort_controllers/JointPositionController
   joint: RR_calf_joint
-
-# --- FL DIY leg ---
-FL_diy_joint1_controller:
-  type: position_controllers/JointPositionController
-  joint: FL_diy_joint1
-
-FL_diy_joint2_controller:
-  type: position_controllers/JointPositionController
-  joint: FL_diy_joint2
-
-FL_diy_joint3_controller:
-  type: position_controllers/JointPositionController
-  joint: FL_diy_joint3
-
-FL_diy_joint4_controller:
-  type: position_controllers/JointPositionController
-  joint: FL_diy_joint4
-
-# --- FR DIY leg ---
-diy_joint1_controller:
-  type: position_controllers/JointPositionController
-  joint: diy_joint1
-
-diy_joint2_controller:
-  type: position_controllers/JointPositionController
-  joint: diy_joint2
-
-diy_joint3_controller:
-  type: position_controllers/JointPositionController
-  joint: diy_joint3
-
-diy_joint4_controller:
-  type: position_controllers/JointPositionController
-  joint: diy_joint4
+  pid: {p: 25.0, i: 0.0, d: 0.5}
