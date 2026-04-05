@@ -67,7 +67,7 @@ RR_calf_controller:
   joint: RR_calf_joint
   pid: {p: 25.0, i: 0.0, d: 0.5}
 
-# --- DIY joints (position control, no PID needed) ---
+# --- DIY joints ---
 FL_diy_joint1_controller:
   type: effort_controllers/JointPositionController
   joint: FL_diy_joint1

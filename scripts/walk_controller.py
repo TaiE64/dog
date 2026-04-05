@@ -33,7 +33,6 @@ DEFAULT_POS = np.array([
 
 ACTION_SCALE = 0.25
 
-# DIY joints: hold at fixed position
 DIY_JOINTS = {
     'FL_diy_joint1': 0.1, 'FL_diy_joint2': 0.0, 'FL_diy_joint3': 0.0, 'FL_diy_joint4': 0.0,
     'diy_joint1': 0.1, 'diy_joint2': 0.0, 'diy_joint3': 0.0, 'diy_joint4': 0.0,

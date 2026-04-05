@@ -91,6 +91,7 @@
     <child link="FL_hip" />
     <axis xyz="1 0 0" />
     <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
+    <dynamics damping="0.5" friction="0.01"/>
   </joint>
   <link name="FL_hip_rotor">
     <inertial>
@@ -129,6 +130,7 @@
     <child link="FL_thigh" />
     <axis xyz="0 1 0" />
     <limit lower="-1.5708" upper="3.4907" effort="23.7" velocity="30.1" />
+    <dynamics damping="0.5" friction="0.01"/>
   </joint>
   <link name="FL_thigh_rotor">
     <inertial>
@@ -150,6 +152,7 @@
     <child link="FL_diy_base_link" />
     <axis xyz="0 1 0" />
     <limit lower="-2.9" upper="-1.2" effort="45.43" velocity="15.70" />
+    <dynamics damping="0.5" friction="0.01"/>
   </joint>
 
   <link name="FL_diy_base_link">
@@ -205,6 +208,7 @@
     <child link="FL_diy_link1" />
     <axis xyz="1 0 0" />
     <limit lower="0" upper="0.1" effort="100" velocity="1" />
+    <dynamics damping="10.0" friction="5.0"/>
   </joint>
 
   <link name="FL_diy_link2">
@@ -267,6 +271,7 @@
     <child link="FL_diy_link3" />
     <axis xyz="0.46021 0 0.88781" />
     <limit lower="-1.42" upper="1.45" effort="1.39" velocity="10.47" />
+    <dynamics damping="0.13" friction="0.1"/>
   </joint>
 
   <link name="FL_diy_link4">
@@ -327,6 +332,7 @@
     <child link="FR_hip" />
     <axis xyz="1 0 0" />
     <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
+    <dynamics damping="0.5" friction="0.01"/>
   </joint>
   <link name="FR_hip_rotor">
     <inertial>
@@ -365,6 +371,7 @@
     <child link="FR_thigh" />
     <axis xyz="0 1 0" />
     <limit lower="-1.5708" upper="3.4907" effort="23.7" velocity="30.1" />
+    <dynamics damping="0.5" friction="0.01"/>
   </joint>
   <link name="FR_thigh_rotor">
     <inertial>
@@ -391,6 +398,7 @@
     <child link="diy_base_link" />
     <axis xyz="0 1 0" />
     <limit lower="-2.9" upper="-1.2" effort="45.43" velocity="15.70" />
+    <dynamics damping="0.5" friction="0.01"/>
   </joint>
 
   <link name="diy_base_link">
@@ -446,6 +454,7 @@
     <child link="diy_link1" />
     <axis xyz="1 0 0" />
     <limit lower="0" upper="0.1" effort="100" velocity="1" />
+    <dynamics damping="10.0" friction="5.0"/>
   </joint>
 
   <link name="diy_link2">
@@ -508,6 +517,7 @@
     <child link="diy_link3" />
     <axis xyz="0.46021 0 0.88781" />
     <limit lower="-1.42" upper="1.45" effort="1.39" velocity="10.47" />
+    <dynamics damping="0.13" friction="0.1"/>
   </joint>
 
   <link name="diy_link4">
@@ -567,6 +577,7 @@
     <child link="RL_hip" />
     <axis xyz="1 0 0" />
     <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
+    <dynamics damping="0.5" friction="0.01"/>
   </joint>
   <link name="RL_hip_rotor">
     <inertial>
@@ -605,6 +616,7 @@
     <child link="RL_thigh" />
     <axis xyz="0 1 0" />
     <limit lower="-0.5236" upper="4.5379" effort="23.7" velocity="30.1" />
+    <dynamics damping="0.5" friction="0.01"/>
   </joint>
   <link name="RL_thigh_rotor">
     <inertial>
@@ -643,6 +655,7 @@
     <child link="RL_calf" />
     <axis xyz="0 1 0" />
     <limit lower="-2.7227" upper="-0.83776" effort="45.43" velocity="15.70" />
+    <dynamics damping="0.5" friction="0.01"/>
   </joint>
   <link name="RL_calflower">
     <collision>
@@ -736,6 +749,7 @@
     <child link="RR_hip" />
     <axis xyz="1 0 0" />
     <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
+    <dynamics damping="0.5" friction="0.01"/>
   </joint>
   <link name="RR_hip_rotor">
     <inertial>
@@ -774,6 +788,7 @@
     <child link="RR_thigh" />
     <axis xyz="0 1 0" />
     <limit lower="-0.5236" upper="4.5379" effort="23.7" velocity="30.1" />
+    <dynamics damping="0.5" friction="0.01"/>
   </joint>
   <link name="RR_thigh_rotor">
     <inertial>
@@ -812,6 +827,7 @@
     <child link="RR_calf" />
     <axis xyz="0 1 0" />
     <limit lower="-2.7227" upper="-0.83776" effort="45.43" velocity="15.70" />
+    <dynamics damping="0.5" friction="0.01"/>
   </joint>
   <link name="RR_calflower">
     <collision>
@@ -1021,7 +1037,7 @@
     <actuator name="RR_calf_motor"><mechanicalReduction>1</mechanicalReduction></actuator>
   </transmission>
 
-  <!-- DIY transmissions (PositionJointInterface - direct position lock) -->
+  <!-- DIY transmissions (EffortJointInterface) -->
   <transmission name="FL_diy_tran1">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="FL_diy_joint1"><hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface></joint>
