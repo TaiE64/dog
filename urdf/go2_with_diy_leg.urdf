@@ -1024,42 +1024,42 @@
   <!-- DIY transmissions (PositionJointInterface - direct position lock) -->
   <transmission name="FL_diy_tran1">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="FL_diy_joint1"><hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface></joint>
+    <joint name="FL_diy_joint1"><hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface></joint>
     <actuator name="FL_diy_motor1"><mechanicalReduction>1</mechanicalReduction></actuator>
   </transmission>
   <transmission name="FL_diy_tran2">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="FL_diy_joint2"><hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface></joint>
+    <joint name="FL_diy_joint2"><hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface></joint>
     <actuator name="FL_diy_motor2"><mechanicalReduction>1</mechanicalReduction></actuator>
   </transmission>
   <transmission name="FL_diy_tran3">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="FL_diy_joint3"><hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface></joint>
+    <joint name="FL_diy_joint3"><hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface></joint>
     <actuator name="FL_diy_motor3"><mechanicalReduction>1</mechanicalReduction></actuator>
   </transmission>
   <transmission name="FL_diy_tran4">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="FL_diy_joint4"><hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface></joint>
+    <joint name="FL_diy_joint4"><hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface></joint>
     <actuator name="FL_diy_motor4"><mechanicalReduction>1</mechanicalReduction></actuator>
   </transmission>
   <transmission name="FR_diy_tran1">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="diy_joint1"><hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface></joint>
+    <joint name="diy_joint1"><hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface></joint>
     <actuator name="FR_diy_motor1"><mechanicalReduction>1</mechanicalReduction></actuator>
   </transmission>
   <transmission name="FR_diy_tran2">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="diy_joint2"><hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface></joint>
+    <joint name="diy_joint2"><hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface></joint>
     <actuator name="FR_diy_motor2"><mechanicalReduction>1</mechanicalReduction></actuator>
   </transmission>
   <transmission name="FR_diy_tran3">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="diy_joint3"><hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface></joint>
+    <joint name="diy_joint3"><hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface></joint>
     <actuator name="FR_diy_motor3"><mechanicalReduction>1</mechanicalReduction></actuator>
   </transmission>
   <transmission name="FR_diy_tran4">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="diy_joint4"><hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface></joint>
+    <joint name="diy_joint4"><hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface></joint>
     <actuator name="FR_diy_motor4"><mechanicalReduction>1</mechanicalReduction></actuator>
   </transmission>
 
