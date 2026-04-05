@@ -3,7 +3,7 @@ joint_state_controller:
   type: joint_state_controller/JointStateController
   publish_rate: 200
 
-# Effort controller for all Go2 leg joints
+# Effort controller for all Go2 leg joints (PD computed in walk_controller at 50Hz)
 go2_effort_controller:
   type: effort_controllers/JointGroupEffortController
   joints:
@@ -20,43 +20,43 @@ go2_effort_controller:
     - RR_thigh_joint
     - RR_calf_joint
 
-# DIY joints (PD at physics rate 250Hz, matching MuJoCo)
+# DIY joints (JointPositionController, PD at physics rate 250Hz like MuJoCo)
 FL_diy_joint1_controller:
   type: effort_controllers/JointPositionController
   joint: FL_diy_joint1
-  pid: {p: 100.0, i: 0.0, d: 5.0}
+  pid: {p: 10.0, i: 0.0, d: 1.0}
 
 FL_diy_joint2_controller:
   type: effort_controllers/JointPositionController
   joint: FL_diy_joint2
-  pid: {p: 10.0, i: 0.0, d: 0.5}
+  pid: {p: 1.0, i: 0.0, d: 0.2}
 
 FL_diy_joint3_controller:
   type: effort_controllers/JointPositionController
   joint: FL_diy_joint3
-  pid: {p: 10.0, i: 0.0, d: 0.5}
+  pid: {p: 0.5, i: 0.0, d: 0.1}
 
 FL_diy_joint4_controller:
   type: effort_controllers/JointPositionController
   joint: FL_diy_joint4
-  pid: {p: 10.0, i: 0.0, d: 0.5}
+  pid: {p: 0.5, i: 0.0, d: 0.1}
 
 diy_joint1_controller:
   type: effort_controllers/JointPositionController
   joint: diy_joint1
-  pid: {p: 100.0, i: 0.0, d: 5.0}
+  pid: {p: 10.0, i: 0.0, d: 1.0}
 
 diy_joint2_controller:
   type: effort_controllers/JointPositionController
   joint: diy_joint2
-  pid: {p: 10.0, i: 0.0, d: 0.5}
+  pid: {p: 1.0, i: 0.0, d: 0.2}
 
 diy_joint3_controller:
   type: effort_controllers/JointPositionController
   joint: diy_joint3
-  pid: {p: 10.0, i: 0.0, d: 0.5}
+  pid: {p: 0.5, i: 0.0, d: 0.1}
 
 diy_joint4_controller:
   type: effort_controllers/JointPositionController
   joint: diy_joint4
-  pid: {p: 10.0, i: 0.0, d: 0.5}
+  pid: {p: 0.5, i: 0.0, d: 0.1}

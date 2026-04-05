@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Walk controller: deploys trained RL policy in Gazebo (ROS1).
-Computes PD torques manually at 50Hz and publishes via JointGroupEffortController.
-Matches MuJoCo deployment behavior exactly.
+- Go2 legs: manual PD at 50Hz via JointGroupEffortController
+- DIY arms: target angles via JointPositionController (PD at 250Hz physics rate, like MuJoCo)
 """
 import rospy
 import torch
@@ -32,16 +32,23 @@ DEFAULT_POS = np.array([
 
 ACTION_SCALE = 0.25
 
-# DIY joints: hold at default position (controlled by JointPositionController at 250Hz)
-DIY_JOINTS = {
-    'FL_diy_joint1': 0.1, 'FL_diy_joint2': 0.0, 'FL_diy_joint3': 0.0, 'FL_diy_joint4': 0.0,
-    'diy_joint1': 0.1, 'diy_joint2': 0.0, 'diy_joint3': 0.0, 'diy_joint4': 0.0,
-}
+# DIY joints: target angles sent to JointPositionController (PD at 250Hz by ros_control)
+DIY_JOINT_NAMES = [
+    'FL_diy_joint1', 'FL_diy_joint2', 'FL_diy_joint3', 'FL_diy_joint4',
+    'diy_joint1', 'diy_joint2', 'diy_joint3', 'diy_joint4',
+]
+# Joint limits [lower, upper] from URDF
+DIY_JOINT_LIMITS = np.array([
+    [0.0, 0.1], [-2.4, 0.67], [-1.42, 1.45], [-0.17, 1.4],   # FL
+    [0.0, 0.1], [-2.4, 0.67], [-1.42, 1.45], [-0.17, 1.4],   # FR
+], dtype=np.float32)
+# Initial targets (midpoint of limits)
+DIY_DEFAULT = np.array([0.5*(l[0]+l[1]) for l in DIY_JOINT_LIMITS], dtype=np.float32)
 
-# PD gains and effort limits (matching MuJoCo deployment)
+# PD gains and effort limits for Go2 legs (manual PD at 50Hz)
 KP = 25.0
 KD = 0.5
-EFFORT_LIMIT = 23.7  # Go2 motor limit (Nm)
+EFFORT_LIMIT = 23.7
 
 # Policy order: grouped by joint type
 POLICY_TO_URDF = [0, 3, 6, 9, 1, 4, 7, 10, 2, 5, 8, 11]
@@ -65,7 +72,6 @@ def reorder_policy_to_urdf(policy_data):
 
 
 def quat_rotate_inverse(q, v):
-    """Rotate vector v by the inverse of quaternion q = (x, y, z, w)."""
     q_w = q[3]
     q_vec = q[:3]
     a = v * (2.0 * q_w ** 2 - 1.0)
@@ -78,7 +84,6 @@ class WalkController:
     def __init__(self):
         rospy.init_node('walk_controller')
 
-        # Load model
         model_path = rospy.get_param('~model_path', '')
         rospy.loginfo(f'Loading model from {model_path}')
 
@@ -98,7 +103,6 @@ class WalkController:
         self.policy.eval()
         rospy.loginfo('Model loaded successfully')
 
-        # State variables
         self.joint_pos = np.zeros(12, dtype=np.float32)
         self.joint_vel = np.zeros(12, dtype=np.float32)
         self.ang_vel = np.zeros(3, dtype=np.float32)
@@ -110,12 +114,14 @@ class WalkController:
         self.imu_ready = False
         self.joints_ready = False
 
-        # Publisher: effort command for Go2 legs
-        self.effort_pub = rospy.Publisher('/go2_effort_controller/command', Float64MultiArray, queue_size=1)
+        # DIY random motion state
+        self.diy_targets = DIY_DEFAULT.copy()
+        self.diy_next_change = None  # set after unpause
 
-        # Publishers: DIY joint position targets (PD computed by ros_control at 250Hz)
+        # Publishers
+        self.effort_pub = rospy.Publisher('/go2_effort_controller/command', Float64MultiArray, queue_size=1)
         self.diy_pubs = {}
-        for name in DIY_JOINTS:
+        for name in DIY_JOINT_NAMES:
             self.diy_pubs[name] = rospy.Publisher(f'/{name}_controller/command', Float64, queue_size=1)
 
         # Subscribers
@@ -150,8 +156,7 @@ class WalkController:
         self.cmd_vel[2] = msg.angular.z
 
     def build_obs(self):
-        # IMU ang_vel is already in body frame
-        body_ang_vel = self.ang_vel
+        body_ang_vel = self.ang_vel  # IMU already in body frame
         projected_gravity = quat_rotate_inverse(self.quat, self.gravity_vec)
 
         joint_pos_policy = reorder_urdf_to_policy(self.joint_pos)
@@ -169,8 +174,7 @@ class WalkController:
         return obs
 
     def compute_torques(self, target_pos):
-        """Compute PD torques manually, same as MuJoCo version."""
-        torques = KP * (target_pos - self.joint_pos) + KD * (0.0 - self.joint_vel)
+        torques = KP * (target_pos - self.joint_pos) - KD * self.joint_vel
         torques = np.clip(torques, -EFFORT_LIMIT, EFFORT_LIMIT)
         return torques
 
@@ -179,12 +183,23 @@ class WalkController:
         msg.data = torques.tolist()
         self.effort_pub.publish(msg)
 
+    def update_diy_targets(self):
+        """Randomly sample new DIY targets every 3-8 seconds."""
+        now = rospy.Time.now()
+        if self.diy_next_change is None:
+            self.diy_next_change = now + rospy.Duration(np.random.uniform(3.0, 8.0))
+        if now >= self.diy_next_change:
+            for i in range(len(DIY_JOINT_NAMES)):
+                self.diy_targets[i] = np.random.uniform(DIY_JOINT_LIMITS[i][0], DIY_JOINT_LIMITS[i][1])
+            self.diy_next_change = now + rospy.Duration(np.random.uniform(3.0, 8.0))
+        for i, name in enumerate(DIY_JOINT_NAMES):
+            self.diy_pubs[name].publish(Float64(self.diy_targets[i]))
+
     def run(self):
-        # Wait for controller
         rospy.loginfo('Waiting for controllers...')
         rospy.wait_for_service('/controller_manager/list_controllers')
         list_ctrl = rospy.ServiceProxy('/controller_manager/list_controllers', ListControllers)
-        expected_diy = set(f'{name}_controller' for name in DIY_JOINTS)
+        expected_diy = set(f'{name}_controller' for name in DIY_JOINT_NAMES)
         while not rospy.is_shutdown():
             resp = list_ctrl()
             running = set(c.name for c in resp.controller if c.state == 'running')
@@ -193,18 +208,16 @@ class WalkController:
             rospy.sleep(0.2)
         rospy.loginfo('All controllers running.')
 
-        # Wait for sensors
         rospy.loginfo('Waiting for sensors...')
         while not (self.imu_ready and self.joints_ready) and not rospy.is_shutdown():
             rospy.sleep(0.1)
 
-        # Unpause Gazebo
         rospy.loginfo('Unpausing Gazebo...')
         rospy.wait_for_service('/gazebo/unpause_physics')
         unpause = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         unpause()
 
-        # Stand for 3 seconds (PD to default pos at 50Hz)
+        # Stand for 3 seconds
         rospy.loginfo('Standing for 3 seconds...')
         stand_rate = rospy.Rate(50)
         stand_start = rospy.Time.now()
@@ -214,8 +227,7 @@ class WalkController:
                 break
             torques = self.compute_torques(DEFAULT_POS)
             self.publish_efforts(torques)
-            for name, pos in DIY_JOINTS.items():
-                self.diy_pubs[name].publish(Float64(pos))
+            self.update_diy_targets()
             stand_rate.sleep()
 
         # Walk policy loop at 50 Hz
@@ -230,15 +242,12 @@ class WalkController:
 
             self.last_action = action.copy()
 
-            # Action -> target joint pos (policy order -> URDF order)
             target_policy = DEFAULT_POS_POLICY + action * ACTION_SCALE
             target_urdf = reorder_policy_to_urdf(target_policy)
 
-            # Compute and publish PD torques
             torques = self.compute_torques(target_urdf)
             self.publish_efforts(torques)
-            for name, pos in DIY_JOINTS.items():
-                self.diy_pubs[name].publish(Float64(pos))
+            self.update_diy_targets()
 
             rate.sleep()
 
