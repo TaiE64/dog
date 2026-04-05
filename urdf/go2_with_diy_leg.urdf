@@ -1055,7 +1055,7 @@
   </transmission>
   <transmission name="FL_diy_tran4">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="FL_diy_joint4"><hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface></joint>
+    <joint name="FL_diy_joint4"><hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface></joint>
     <actuator name="FL_diy_motor4"><mechanicalReduction>1</mechanicalReduction></actuator>
   </transmission>
   <transmission name="FR_diy_tran1">
@@ -1075,7 +1075,7 @@
   </transmission>
   <transmission name="FR_diy_tran4">
     <type>transmission_interface/SimpleTransmission</type>
-    <joint name="diy_joint4"><hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface></joint>
+    <joint name="diy_joint4"><hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface></joint>
     <actuator name="FR_diy_motor4"><mechanicalReduction>1</mechanicalReduction></actuator>
   </transmission>
 

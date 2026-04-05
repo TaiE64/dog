@@ -210,7 +210,6 @@ class WalkController:
             if elapsed >= 3.0:
                 break
             self.publish_go2_targets(DEFAULT_POS)
-            self.publish_diy_targets()
             stand_rate.sleep()
 
         # Walk policy loop at 50 Hz
@@ -231,7 +230,6 @@ class WalkController:
 
             # Send target angles (PD computed by ros_control at 250Hz)
             self.publish_go2_targets(target_urdf)
-            self.publish_diy_targets()
 
             rate.sleep()
 
