@@ -33,6 +33,12 @@ DEFAULT_POS = np.array([
 
 ACTION_SCALE = 0.25
 
+# DIY joints: hold at fixed position
+DIY_JOINTS = {
+    'FL_diy_joint1': 0.1, 'FL_diy_joint2': 0.0, 'FL_diy_joint3': 0.0, 'FL_diy_joint4': 0.0,
+    'diy_joint1': 0.1, 'diy_joint2': 0.0, 'diy_joint3': 0.0, 'diy_joint4': 0.0,
+}
+
 # Policy order: grouped by joint type (hip-hip-hip-hip, thigh-thigh-thigh-thigh, calf-calf-calf-calf)
 # URDF order: grouped by leg (hip-thigh-calf, hip-thigh-calf, ...)
 # policy_idx -> urdf_idx
@@ -105,11 +111,13 @@ class WalkController:
         self.imu_ready = False
         self.joints_ready = False
 
-        # Publishers
+        # Publishers (Go2 + DIY)
         self.pubs = {}
         for name in GO2_JOINT_NAMES:
             ctrl = name.replace('_joint', '_controller')
             self.pubs[name] = rospy.Publisher(f'/{ctrl}/command', Float64, queue_size=1)
+        for name in DIY_JOINTS:
+            self.pubs[name] = rospy.Publisher(f'/{name}_controller/command', Float64, queue_size=1)
 
         # Subscribers
         rospy.Subscriber('/joint_states', JointState, self.joint_state_cb)
@@ -143,7 +151,9 @@ class WalkController:
         self.cmd_vel[2] = msg.angular.z
 
     def build_obs(self):
-        body_ang_vel = quat_rotate_inverse(self.quat, self.ang_vel)
+        # ang_vel from Gazebo IMU is already in body frame, no need to rotate
+        body_ang_vel = self.ang_vel
+        # gravity needs to be projected from world to body frame
         projected_gravity = quat_rotate_inverse(self.quat, self.gravity_vec)
 
         # Reorder joint data from URDF to policy order
@@ -167,6 +177,7 @@ class WalkController:
         rospy.wait_for_service('/controller_manager/list_controllers')
         list_ctrl = rospy.ServiceProxy('/controller_manager/list_controllers', ListControllers)
         expected = set(j.replace('_joint', '_controller') for j in GO2_JOINT_NAMES)
+        expected.update(f'{name}_controller' for name in DIY_JOINTS)
         rate = rospy.Rate(5)
         while not rospy.is_shutdown():
             resp = list_ctrl()
@@ -197,6 +208,8 @@ class WalkController:
                 break
             for i, name in enumerate(GO2_JOINT_NAMES):
                 self.pubs[name].publish(Float64(DEFAULT_POS[i]))
+            for name, pos in DIY_JOINTS.items():
+                self.pubs[name].publish(Float64(pos))
             stand_rate.sleep()
 
         # Walk policy loop at 50 Hz
@@ -217,6 +230,8 @@ class WalkController:
 
             for i, name in enumerate(GO2_JOINT_NAMES):
                 self.pubs[name].publish(Float64(target_urdf[i]))
+            for name, pos in DIY_JOINTS.items():
+                self.pubs[name].publish(Float64(pos))
 
             rate.sleep()
 
