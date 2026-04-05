@@ -5,7 +5,7 @@
 
   <default>
     <geom friction="1.0 0.005 0.0001" condim="3" contype="1" conaffinity="1"/>
-    <joint damping="0" armature="0.01"/>
+    <joint damping="0.5" armature="0.01"/>
   </default>
 
   <asset>
@@ -53,22 +53,22 @@
               <geom type="mesh" rgba="0.627451 0.627451 0.627451 1" mesh="base_link"/>
               <body name="FL_diy_link1" pos="-0.022741 -5e-05 0.032" quat="-3.67321e-06 1 0 0">
                 <inertial pos="-0.128815 6.16693e-05 0.0174845" quat="0.60809 0.393539 0.405553 0.557567" mass="0.0589547" diaginertia="1.49592e-05 1.38269e-05 1.14707e-05"/>
-                <joint name="FL_diy_joint1" pos="0 0 0" axis="1 0 0" type="slide" range="0 0.1"/>
+                <joint name="FL_diy_joint1" pos="0 0 0" axis="1 0 0" type="slide" range="0 0.1" damping="10.0" armature="5.0" frictionloss="5.0"/>
                 <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.627451 0.627451 0.627451 1" mesh="link1"/>
                 <geom type="mesh" rgba="0.627451 0.627451 0.627451 1" mesh="link1"/>
                 <body name="FL_diy_link2" pos="-0.145983 -0.0292 0.0227">
                   <inertial pos="-0.0412401 0.029 -0.00237298" quat="0.492327 0.492327 -0.507557 0.507557" mass="0.0492722" diaginertia="2.51508e-05 1.61636e-05 1.49982e-05"/>
-                  <joint name="FL_diy_joint2" pos="0 0 0" axis="0 -1 0" range="-2.4 0.67"/>
+                  <joint name="FL_diy_joint2" pos="0 0 0" axis="0 -1 0" range="-2.4 0.67" damping="0.62" armature="0.012" frictionloss="0.3"/>
                   <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.627451 0.627451 0.627451 1" mesh="link2"/>
                   <geom type="mesh" rgba="0.627451 0.627451 0.627451 1" mesh="link2"/>
                   <body name="FL_diy_link3" pos="-0.050675 0.029 0.017145">
                     <inertial pos="-0.0875706 0.00129801 0.0260546" quat="0.38206 0.600628 0.593439 0.375642" mass="0.111403" diaginertia="0.000168687 0.000164287 1.93189e-05"/>
-                    <joint name="FL_diy_joint3" pos="0 0 0" axis="0.46021 0 0.88781" range="-1.42 1.45"/>
+                    <joint name="FL_diy_joint3" pos="0 0 0" axis="0.46021 0 0.88781" range="-1.42 1.45" damping="0.13" armature="0.005" frictionloss="0.1"/>
                     <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.627451 0.627451 0.627451 1" mesh="link3"/>
                     <geom type="mesh" rgba="0.627451 0.627451 0.627451 1" mesh="link3"/>
                     <body name="FL_diy_link4" pos="-0.12194 -0.015927 0.044362">
                       <inertial pos="-0.0320231 0.0188395 0.019613" quat="0.420708 0.574598 0.569492 0.410513" mass="0.0268788" diaginertia="1.15938e-05 1.13104e-05 1.68093e-06"/>
-                      <joint name="FL_diy_joint4" pos="0 0 0" axis="0.014315 0.99987 -0.0074203" range="-0.17 1.4"/>
+                      <joint name="FL_diy_joint4" pos="0 0 0" axis="0.014315 0.99987 -0.0074203" range="-0.17 1.4" damping="0.13" armature="0.005" frictionloss="0.1"/>
                       <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.627451 0.627451 0.627451 1" mesh="link4"/>
                       <geom type="mesh" rgba="0.627451 0.627451 0.627451 1" mesh="link4"/>
                     </body>
@@ -95,22 +95,22 @@
               <geom type="mesh" rgba="0.627451 0.627451 0.627451 1" mesh="base_link"/>
               <body name="diy_link1" pos="-0.022741 -5e-05 0.032" quat="-3.67321e-06 1 0 0">
                 <inertial pos="-0.128815 6.16693e-05 0.0174845" quat="0.60809 0.393539 0.405553 0.557567" mass="0.0589547" diaginertia="1.49592e-05 1.38269e-05 1.14707e-05"/>
-                <joint name="diy_joint1" pos="0 0 0" axis="1 0 0" type="slide" range="0 0.1"/>
+                <joint name="diy_joint1" pos="0 0 0" axis="1 0 0" type="slide" range="0 0.1" damping="10.0" armature="5.0" frictionloss="5.0"/>
                 <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.627451 0.627451 0.627451 1" mesh="link1"/>
                 <geom type="mesh" rgba="0.627451 0.627451 0.627451 1" mesh="link1"/>
                 <body name="diy_link2" pos="-0.145983 -0.0292 0.0227">
                   <inertial pos="-0.0412401 0.029 -0.00237298" quat="0.492327 0.492327 -0.507557 0.507557" mass="0.0492722" diaginertia="2.51508e-05 1.61636e-05 1.49982e-05"/>
-                  <joint name="diy_joint2" pos="0 0 0" axis="0 -1 0" range="-2.4 0.67"/>
+                  <joint name="diy_joint2" pos="0 0 0" axis="0 -1 0" range="-2.4 0.67" damping="0.62" armature="0.012" frictionloss="0.3"/>
                   <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.627451 0.627451 0.627451 1" mesh="link2"/>
                   <geom type="mesh" rgba="0.627451 0.627451 0.627451 1" mesh="link2"/>
                   <body name="diy_link3" pos="-0.050675 0.029 0.017145">
                     <inertial pos="-0.0875706 0.00129801 0.0260546" quat="0.38206 0.600628 0.593439 0.375642" mass="0.111403" diaginertia="0.000168687 0.000164287 1.93189e-05"/>
-                    <joint name="diy_joint3" pos="0 0 0" axis="0.46021 0 0.88781" range="-1.42 1.45"/>
+                    <joint name="diy_joint3" pos="0 0 0" axis="0.46021 0 0.88781" range="-1.42 1.45" damping="0.13" armature="0.005" frictionloss="0.1"/>
                     <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.627451 0.627451 0.627451 1" mesh="link3"/>
                     <geom type="mesh" rgba="0.627451 0.627451 0.627451 1" mesh="link3"/>
                     <body name="diy_link4" pos="-0.12194 -0.015927 0.044362">
                       <inertial pos="-0.0320231 0.0188395 0.019613" quat="0.420708 0.574598 0.569492 0.410513" mass="0.0268788" diaginertia="1.15938e-05 1.13104e-05 1.68093e-06"/>
-                      <joint name="diy_joint4" pos="0 0 0" axis="0.014315 0.99987 -0.0074203" range="-0.17 1.4"/>
+                      <joint name="diy_joint4" pos="0 0 0" axis="0.014315 0.99987 -0.0074203" range="-0.17 1.4" damping="0.13" armature="0.005" frictionloss="0.1"/>
                       <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.627451 0.627451 0.627451 1" mesh="link4"/>
                       <geom type="mesh" rgba="0.627451 0.627451 0.627451 1" mesh="link4"/>
                     </body>
