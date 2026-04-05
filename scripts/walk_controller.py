@@ -37,11 +37,10 @@ DIY_JOINT_NAMES = [
     'FL_diy_joint1', 'FL_diy_joint2', 'FL_diy_joint3', 'FL_diy_joint4',
     'diy_joint1', 'diy_joint2', 'diy_joint3', 'diy_joint4',
 ]
-DIY_JOINT_LIMITS = np.array([
-    [0.0, 0.1], [-2.4, 0.67], [-1.42, 1.45], [-0.17, 1.4],
-    [0.0, 0.1], [-2.4, 0.67], [-1.42, 1.45], [-0.17, 1.4],
+DIY_DEFAULT = np.array([
+    0.1, 0.0, 0.0, -0.17,   # FL (joint4=-0.17 closed)
+    0.1, 0.0, 0.0, -0.17,   # FR (joint4=-0.17 closed)
 ], dtype=np.float32)
-DIY_DEFAULT = np.array([0.5*(l[0]+l[1]) for l in DIY_JOINT_LIMITS], dtype=np.float32)
 
 # Policy order: grouped by joint type
 POLICY_TO_URDF = [0, 3, 6, 9, 1, 4, 7, 10, 2, 5, 8, 11]
@@ -174,17 +173,10 @@ class WalkController:
         for i, name in enumerate(GO2_JOINT_NAMES):
             self.go2_pubs[name].publish(Float64(targets[i]))
 
-    def update_diy_targets(self):
-        """Randomly sample new DIY targets every 3-8 seconds."""
-        now = rospy.Time.now()
-        if self.diy_next_change is None:
-            self.diy_next_change = now + rospy.Duration(np.random.uniform(3.0, 8.0))
-        if now >= self.diy_next_change:
-            for i in range(len(DIY_JOINT_NAMES)):
-                self.diy_targets[i] = np.random.uniform(DIY_JOINT_LIMITS[i][0], DIY_JOINT_LIMITS[i][1])
-            self.diy_next_change = now + rospy.Duration(np.random.uniform(3.0, 8.0))
+    def publish_diy_targets(self):
+        """Send fixed default targets to DIY joints."""
         for i, name in enumerate(DIY_JOINT_NAMES):
-            self.diy_pubs[name].publish(Float64(self.diy_targets[i]))
+            self.diy_pubs[name].publish(Float64(DIY_DEFAULT[i]))
 
     def run(self):
         rospy.loginfo('Waiting for controllers...')
@@ -218,7 +210,7 @@ class WalkController:
             if elapsed >= 3.0:
                 break
             self.publish_go2_targets(DEFAULT_POS)
-            self.update_diy_targets()
+            self.publish_diy_targets()
             stand_rate.sleep()
 
         # Walk policy loop at 50 Hz
@@ -239,7 +231,7 @@ class WalkController:
 
             # Send target angles (PD computed by ros_control at 250Hz)
             self.publish_go2_targets(target_urdf)
-            self.update_diy_targets()
+            self.publish_diy_targets()
 
             rate.sleep()
 
