@@ -113,24 +113,33 @@ class ArmTrajectoryBridge:
 def main():
     rospy.init_node('arm_trajectory_bridge')
 
-    fl_default = [0.1, 0.0, 0.0, -0.17]  # joint4=-0.17 closed
-    fr_default = [0.1, 0.0, 0.0, -0.17]  # joint4=-0.17 closed
-
-    fl_bridge = ArmTrajectoryBridge(
+    fl_arm_bridge = ArmTrajectoryBridge(
         'fl_arm',
-        ['FL_diy_joint1', 'FL_diy_joint2', 'FL_diy_joint3', 'FL_diy_joint4'],
-        fl_default)
+        ['FL_diy_joint1', 'FL_diy_joint2', 'FL_diy_joint3'],
+        [0.1, 0.0, 0.0])
 
-    fr_bridge = ArmTrajectoryBridge(
+    fl_gripper_bridge = ArmTrajectoryBridge(
+        'fl_gripper',
+        ['FL_diy_joint4'],
+        [-0.17])
+
+    fr_arm_bridge = ArmTrajectoryBridge(
         'fr_arm',
-        ['diy_joint1', 'diy_joint2', 'diy_joint3', 'diy_joint4'],
-        fr_default)
+        ['diy_joint1', 'diy_joint2', 'diy_joint3'],
+        [0.1, 0.0, 0.0])
+
+    fr_gripper_bridge = ArmTrajectoryBridge(
+        'fr_gripper',
+        ['diy_joint4'],
+        [-0.17])
 
     # Continuously publish current targets at 50Hz
     rate = rospy.Rate(50)
     while not rospy.is_shutdown():
-        fl_bridge.publish_current()
-        fr_bridge.publish_current()
+        fl_arm_bridge.publish_current()
+        fl_gripper_bridge.publish_current()
+        fr_arm_bridge.publish_current()
+        fr_gripper_bridge.publish_current()
         rate.sleep()
 
 
