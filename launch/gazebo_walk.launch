@@ -19,10 +19,7 @@
     <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false"
         output="screen" args="
             joint_state_controller
-            FL_hip_controller FL_thigh_controller FL_calf_controller
-            FR_hip_controller FR_thigh_controller FR_calf_controller
-            RL_hip_controller RL_thigh_controller RL_calf_controller
-            RR_hip_controller RR_thigh_controller RR_calf_controller
+            go2_effort_controller
             FL_diy_joint1_controller FL_diy_joint2_controller FL_diy_joint3_controller FL_diy_joint4_controller
             diy_joint1_controller diy_joint2_controller diy_joint3_controller diy_joint4_controller
         "/>

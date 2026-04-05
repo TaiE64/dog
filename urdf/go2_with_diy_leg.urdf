@@ -1037,7 +1037,7 @@
     <actuator name="RR_calf_motor"><mechanicalReduction>1</mechanicalReduction></actuator>
   </transmission>
 
-  <!-- DIY transmissions (EffortJointInterface) -->
+  <!-- DIY transmissions (EffortJointInterface, PD at physics rate 250Hz) -->
   <transmission name="FL_diy_tran1">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="FL_diy_joint1"><hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface></joint>

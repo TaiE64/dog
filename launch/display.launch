@@ -3,7 +3,16 @@
 
     <node pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" name="joint_state_publisher_gui">
         <param name="use_gui" value="true"/>
-        <rosparam command="load" file="$(find leg_manipulator)/config/default_joint_angles.yaml"/>
+        <param name="zeros/FL_thigh_joint" value="0.543"/>
+        <param name="zeros/FL_calf_joint" value="-2.07"/>
+        <param name="zeros/FL_diy_joint1" value="0.1"/>
+        <param name="zeros/FR_thigh_joint" value="0.543"/>
+        <param name="zeros/FR_calf_joint" value="-2.07"/>
+        <param name="zeros/diy_joint1" value="0.1"/>
+        <param name="zeros/RL_thigh_joint" value="0.905"/>
+        <param name="zeros/RL_calf_joint" value="-1.78"/>
+        <param name="zeros/RR_thigh_joint" value="0.905"/>
+        <param name="zeros/RR_calf_joint" value="-1.78"/>
     </node>
 
     <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher"/>

@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
 """
 Walk controller: deploys trained RL policy in Gazebo (ROS1).
-Based on the working MuJoCo walk_policy_node.py.
-No joint reordering - policy uses URDF order directly.
+Computes PD torques manually at 50Hz and publishes via JointGroupEffortController.
+Matches MuJoCo deployment behavior exactly.
 """
 import rospy
 import torch
 import torch.nn as nn
 import numpy as np
-import yaml
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Float64MultiArray
 from sensor_msgs.msg import Imu, JointState
 from std_srvs.srv import Empty
 from controller_manager_msgs.srv import ListControllers
 from geometry_msgs.msg import Twist
 
-# Go2 joint names in URDF order (matches policy order)
+# Go2 joint names in URDF order
 GO2_JOINT_NAMES = [
     'FL_hip_joint', 'FL_thigh_joint', 'FL_calf_joint',
     'FR_hip_joint', 'FR_thigh_joint', 'FR_calf_joint',
@@ -25,31 +24,32 @@ GO2_JOINT_NAMES = [
 
 # Default standing pose (URDF order)
 DEFAULT_POS = np.array([
-    0.0, 0.543, -2.07,   # FL
-    0.0, 0.543, -2.07,   # FR
-    0.0, 0.905, -1.78,   # RL
-    0.0, 0.905, -1.78,   # RR
+    0.0, 0.543, -2.07,
+    0.0, 0.543, -2.07,
+    0.0, 0.905, -1.78,
+    0.0, 0.905, -1.78,
 ], dtype=np.float32)
 
 ACTION_SCALE = 0.25
 
+# DIY joints: hold at default position (controlled by JointPositionController at 250Hz)
 DIY_JOINTS = {
     'FL_diy_joint1': 0.1, 'FL_diy_joint2': 0.0, 'FL_diy_joint3': 0.0, 'FL_diy_joint4': 0.0,
     'diy_joint1': 0.1, 'diy_joint2': 0.0, 'diy_joint3': 0.0, 'diy_joint4': 0.0,
 }
 
-# Policy order: grouped by joint type (hip-hip-hip-hip, thigh-thigh-thigh-thigh, calf-calf-calf-calf)
-# URDF order: grouped by leg (hip-thigh-calf, hip-thigh-calf, ...)
-# policy_idx -> urdf_idx
-POLICY_TO_URDF = [0, 3, 6, 9, 1, 4, 7, 10, 2, 5, 8, 11]
-# urdf_idx -> policy_idx
-URDF_TO_POLICY = [0, 4, 8, 1, 5, 9, 2, 6, 10, 3, 7, 11]
+# PD gains and effort limits (matching MuJoCo deployment)
+KP = 25.0
+KD = 0.5
+EFFORT_LIMIT = 23.7  # Go2 motor limit (Nm)
 
-# Default pos in POLICY order (grouped by type)
+# Policy order: grouped by joint type
+POLICY_TO_URDF = [0, 3, 6, 9, 1, 4, 7, 10, 2, 5, 8, 11]
+
 DEFAULT_POS_POLICY = np.array([
-    0.0, 0.0, 0.0, 0.0,           # hips
-    0.543, 0.543, 0.905, 0.905,    # thighs
-    -2.07, -2.07, -1.78, -1.78,   # calfs
+    0.0, 0.0, 0.0, 0.0,
+    0.543, 0.543, 0.905, 0.905,
+    -2.07, -2.07, -1.78, -1.78,
 ], dtype=np.float32)
 
 
@@ -102,7 +102,7 @@ class WalkController:
         self.joint_pos = np.zeros(12, dtype=np.float32)
         self.joint_vel = np.zeros(12, dtype=np.float32)
         self.ang_vel = np.zeros(3, dtype=np.float32)
-        self.quat = np.array([0, 0, 0, 1], dtype=np.float32)  # (x,y,z,w)
+        self.quat = np.array([0, 0, 0, 1], dtype=np.float32)
         self.gravity_vec = np.array([0, 0, -1], dtype=np.float32)
         self.cmd_vel = np.zeros(3, dtype=np.float32)
         self.last_action = np.zeros(12, dtype=np.float32)
@@ -110,13 +110,13 @@ class WalkController:
         self.imu_ready = False
         self.joints_ready = False
 
-        # Publishers (Go2 + DIY)
-        self.pubs = {}
-        for name in GO2_JOINT_NAMES:
-            ctrl = name.replace('_joint', '_controller')
-            self.pubs[name] = rospy.Publisher(f'/{ctrl}/command', Float64, queue_size=1)
+        # Publisher: effort command for Go2 legs
+        self.effort_pub = rospy.Publisher('/go2_effort_controller/command', Float64MultiArray, queue_size=1)
+
+        # Publishers: DIY joint position targets (PD computed by ros_control at 250Hz)
+        self.diy_pubs = {}
         for name in DIY_JOINTS:
-            self.pubs[name] = rospy.Publisher(f'/{name}_controller/command', Float64, queue_size=1)
+            self.diy_pubs[name] = rospy.Publisher(f'/{name}_controller/command', Float64, queue_size=1)
 
         # Subscribers
         rospy.Subscriber('/joint_states', JointState, self.joint_state_cb)
@@ -150,43 +150,50 @@ class WalkController:
         self.cmd_vel[2] = msg.angular.z
 
     def build_obs(self):
-        # ang_vel from Gazebo IMU is already in body frame, no need to rotate
+        # IMU ang_vel is already in body frame
         body_ang_vel = self.ang_vel
-        # gravity needs to be projected from world to body frame
         projected_gravity = quat_rotate_inverse(self.quat, self.gravity_vec)
 
-        # Reorder joint data from URDF to policy order
         joint_pos_policy = reorder_urdf_to_policy(self.joint_pos)
         joint_vel_policy = reorder_urdf_to_policy(self.joint_vel)
         joint_pos_rel = joint_pos_policy - DEFAULT_POS_POLICY
 
         obs = np.concatenate([
-            body_ang_vel * 0.2,          # 3
-            projected_gravity,            # 3
-            self.cmd_vel,                 # 3
-            joint_pos_rel,                # 12
-            joint_vel_policy * 0.05,      # 12
-            self.last_action,             # 12
+            body_ang_vel * 0.2,
+            projected_gravity,
+            self.cmd_vel,
+            joint_pos_rel,
+            joint_vel_policy * 0.05,
+            self.last_action,
         ])
-        return obs  # 45 dim
+        return obs
+
+    def compute_torques(self, target_pos):
+        """Compute PD torques manually, same as MuJoCo version."""
+        torques = KP * (target_pos - self.joint_pos) + KD * (0.0 - self.joint_vel)
+        torques = np.clip(torques, -EFFORT_LIMIT, EFFORT_LIMIT)
+        return torques
+
+    def publish_efforts(self, torques):
+        msg = Float64MultiArray()
+        msg.data = torques.tolist()
+        self.effort_pub.publish(msg)
 
     def run(self):
-        # Wait for controllers
+        # Wait for controller
         rospy.loginfo('Waiting for controllers...')
         rospy.wait_for_service('/controller_manager/list_controllers')
         list_ctrl = rospy.ServiceProxy('/controller_manager/list_controllers', ListControllers)
-        expected = set(j.replace('_joint', '_controller') for j in GO2_JOINT_NAMES)
-        expected.update(f'{name}_controller' for name in DIY_JOINTS)
-        rate = rospy.Rate(5)
+        expected_diy = set(f'{name}_controller' for name in DIY_JOINTS)
         while not rospy.is_shutdown():
             resp = list_ctrl()
             running = set(c.name for c in resp.controller if c.state == 'running')
-            if expected.issubset(running):
+            if 'go2_effort_controller' in running and expected_diy.issubset(running):
                 break
-            rate.sleep()
+            rospy.sleep(0.2)
         rospy.loginfo('All controllers running.')
 
-        # Wait for IMU and joint states
+        # Wait for sensors
         rospy.loginfo('Waiting for sensors...')
         while not (self.imu_ready and self.joints_ready) and not rospy.is_shutdown():
             rospy.sleep(0.1)
@@ -197,7 +204,7 @@ class WalkController:
         unpause = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         unpause()
 
-        # Stand for 3 seconds
+        # Stand for 3 seconds (PD to default pos at 50Hz)
         rospy.loginfo('Standing for 3 seconds...')
         stand_rate = rospy.Rate(50)
         stand_start = rospy.Time.now()
@@ -205,10 +212,10 @@ class WalkController:
             elapsed = (rospy.Time.now() - stand_start).to_sec()
             if elapsed >= 3.0:
                 break
-            for i, name in enumerate(GO2_JOINT_NAMES):
-                self.pubs[name].publish(Float64(DEFAULT_POS[i]))
+            torques = self.compute_torques(DEFAULT_POS)
+            self.publish_efforts(torques)
             for name, pos in DIY_JOINTS.items():
-                self.pubs[name].publish(Float64(pos))
+                self.diy_pubs[name].publish(Float64(pos))
             stand_rate.sleep()
 
         # Walk policy loop at 50 Hz
@@ -223,14 +230,15 @@ class WalkController:
 
             self.last_action = action.copy()
 
-            # action is in policy order, convert to target pos then reorder to URDF
+            # Action -> target joint pos (policy order -> URDF order)
             target_policy = DEFAULT_POS_POLICY + action * ACTION_SCALE
             target_urdf = reorder_policy_to_urdf(target_policy)
 
-            for i, name in enumerate(GO2_JOINT_NAMES):
-                self.pubs[name].publish(Float64(target_urdf[i]))
+            # Compute and publish PD torques
+            torques = self.compute_torques(target_urdf)
+            self.publish_efforts(torques)
             for name, pos in DIY_JOINTS.items():
-                self.pubs[name].publish(Float64(pos))
+                self.diy_pubs[name].publish(Float64(pos))
 
             rate.sleep()
 

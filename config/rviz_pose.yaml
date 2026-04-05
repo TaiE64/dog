@@ -1,0 +1,22 @@
+# Current RViz pose - saved from joint_state_publisher_gui
+joint_angles:
+  FL_hip_joint: 0.0
+  FL_thigh_joint: 0.542882
+  FL_calf_joint: -2.07006
+  FL_diy_joint1: 0.0
+  FL_diy_joint2: -2.4
+  FL_diy_joint3: 0.675387
+  FL_diy_joint4: -0.17
+  FR_hip_joint: 0.0
+  FR_thigh_joint: 0.542882
+  FR_calf_joint: -2.07006
+  diy_joint1: 0.0
+  diy_joint2: -2.4
+  diy_joint3: -0.678105
+  diy_joint4: -0.17
+  RL_hip_joint: 0.0
+  RL_thigh_joint: 0.904755
+  RL_calf_joint: -1.780042
+  RR_hip_joint: 0.0
+  RR_thigh_joint: 0.904755
+  RR_calf_joint: -1.780042
