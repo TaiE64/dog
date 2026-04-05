@@ -3,24 +3,69 @@ joint_state_controller:
   type: joint_state_controller/JointStateController
   publish_rate: 200
 
-# Effort controller for all Go2 leg joints (PD computed in walk_controller at 50Hz)
-go2_effort_controller:
-  type: effort_controllers/JointGroupEffortController
-  joints:
-    - FL_hip_joint
-    - FL_thigh_joint
-    - FL_calf_joint
-    - FR_hip_joint
-    - FR_thigh_joint
-    - FR_calf_joint
-    - RL_hip_joint
-    - RL_thigh_joint
-    - RL_calf_joint
-    - RR_hip_joint
-    - RR_thigh_joint
-    - RR_calf_joint
+# Go2 leg joints (JointPositionController, PD at 250Hz physics rate)
+# walk_controller sends target angles at 50Hz, ros_control computes PD torque every physics step
+FL_hip_controller:
+  type: effort_controllers/JointPositionController
+  joint: FL_hip_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
 
-# DIY joints (JointPositionController, PD at physics rate 250Hz like MuJoCo)
+FL_thigh_controller:
+  type: effort_controllers/JointPositionController
+  joint: FL_thigh_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
+
+FL_calf_controller:
+  type: effort_controllers/JointPositionController
+  joint: FL_calf_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
+
+FR_hip_controller:
+  type: effort_controllers/JointPositionController
+  joint: FR_hip_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
+
+FR_thigh_controller:
+  type: effort_controllers/JointPositionController
+  joint: FR_thigh_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
+
+FR_calf_controller:
+  type: effort_controllers/JointPositionController
+  joint: FR_calf_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
+
+RL_hip_controller:
+  type: effort_controllers/JointPositionController
+  joint: RL_hip_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
+
+RL_thigh_controller:
+  type: effort_controllers/JointPositionController
+  joint: RL_thigh_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
+
+RL_calf_controller:
+  type: effort_controllers/JointPositionController
+  joint: RL_calf_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
+
+RR_hip_controller:
+  type: effort_controllers/JointPositionController
+  joint: RR_hip_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
+
+RR_thigh_controller:
+  type: effort_controllers/JointPositionController
+  joint: RR_thigh_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
+
+RR_calf_controller:
+  type: effort_controllers/JointPositionController
+  joint: RR_calf_joint
+  pid: {p: 25.0, i: 0.0, d: 0.5}
+
+# DIY joints (JointPositionController, PD at 250Hz physics rate)
 FL_diy_joint1_controller:
   type: effort_controllers/JointPositionController
   joint: FL_diy_joint1
