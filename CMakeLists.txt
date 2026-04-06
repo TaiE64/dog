@@ -8,9 +8,8 @@ catkin_package()
 find_package(roslaunch)
 
 catkin_install_python(PROGRAMS
-  scripts/stand_controller.py
   scripts/walk_controller.py
-  scripts/arm_trajectory_bridge.py
+  scripts/arm_keyboard_control.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

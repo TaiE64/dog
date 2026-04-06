@@ -1,4 +1,7 @@
 <launch>
+    <!-- Add custom model path -->
+    <env name="GAZEBO_MODEL_PATH" value="$(find leg_manipulator)/models:$(optenv GAZEBO_MODEL_PATH)"/>
+
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <arg name="paused" value="true"/>
         <arg name="world_name" value="$(find leg_manipulator)/launch/empty_world_custom.world"/>

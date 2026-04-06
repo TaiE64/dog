@@ -8,7 +8,7 @@ import rospy
 import torch
 import torch.nn as nn
 import numpy as np
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, Bool
 from sensor_msgs.msg import Imu, JointState
 from std_srvs.srv import Empty
 from controller_manager_msgs.srv import ListControllers
@@ -105,6 +105,7 @@ class WalkController:
         self.joint_name_to_idx = {}
         self.imu_ready = False
         self.joints_ready = False
+        self.diy_external_control = False  # True when external node controls DIY
 
         # DIY random motion state
         self.diy_targets = DIY_DEFAULT.copy()
@@ -123,6 +124,7 @@ class WalkController:
         rospy.Subscriber('/joint_states', JointState, self.joint_state_cb)
         rospy.Subscriber('/imu/data', Imu, self.imu_cb)
         rospy.Subscriber('/cmd_vel', Twist, self.cmd_vel_cb)
+        rospy.Subscriber('/diy_external_control', Bool, self.diy_external_cb)
 
     def joint_state_cb(self, msg):
         if not self.joint_name_to_idx:
@@ -173,8 +175,13 @@ class WalkController:
         for i, name in enumerate(GO2_JOINT_NAMES):
             self.go2_pubs[name].publish(Float64(targets[i]))
 
+    def diy_external_cb(self, msg):
+        self.diy_external_control = msg.data
+
     def publish_diy_targets(self):
-        """Send fixed default targets to DIY joints."""
+        """Send fixed default targets to DIY joints (skip if external control)."""
+        if self.diy_external_control:
+            return
         for i, name in enumerate(DIY_JOINT_NAMES):
             self.diy_pubs[name].publish(Float64(DIY_DEFAULT[i]))
 
@@ -210,6 +217,7 @@ class WalkController:
             if elapsed >= 3.0:
                 break
             self.publish_go2_targets(DEFAULT_POS)
+            self.publish_diy_targets()
             stand_rate.sleep()
 
         # Walk policy loop at 50 Hz
@@ -230,6 +238,7 @@ class WalkController:
 
             # Send target angles (PD computed by ros_control at 250Hz)
             self.publish_go2_targets(target_urdf)
+            self.publish_diy_targets()
 
             rate.sleep()
 
