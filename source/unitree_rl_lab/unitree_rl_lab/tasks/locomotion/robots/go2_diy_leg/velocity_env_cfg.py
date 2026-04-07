@@ -43,27 +43,27 @@ class EventCfg(Go2EventCfg):
         },
     )
 
-    # randomize mass on diy arm end-effectors to simulate grasped objects
-    add_diy_end_effector_mass = EventTerm(
-        func=randomize_rigid_body_mass,
-        mode="startup",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", body_names=[".*diy_link4"]),
-            "mass_distribution_params": (0.0, 0.5),
-            "operation": "add",
-        },
-    )
+    # # randomize mass on diy arm end-effectors to simulate grasped objects
+    # add_diy_end_effector_mass = EventTerm(
+    #     func=randomize_rigid_body_mass,
+    #     mode="startup",
+    #     params={
+    #         "asset_cfg": SceneEntityCfg("robot", body_names=[".*diy_link4"]),
+    #         "mass_distribution_params": (0.0, 0.5),
+    #         "operation": "add",
+    #     },
+    # )
 
-    # periodically set random diy joint targets (PD controller moves smoothly)
-    randomize_diy_joints = EventTerm(
-        func=randomize_joint_position_targets,
-        mode="interval",
-        interval_range_s=(3.0, 8.0),
-        params={
-            "asset_cfg": SceneEntityCfg("robot", joint_names=[".*diy_joint.*"]),
-            "position_range": (-0.8, 0.8),
-        },
-    )
+    # # periodically set random diy joint targets (PD controller moves smoothly)
+    # randomize_diy_joints = EventTerm(
+    #     func=randomize_joint_position_targets,
+    #     mode="interval",
+    #     interval_range_s=(3.0, 8.0),
+    #     params={
+    #         "asset_cfg": SceneEntityCfg("robot", joint_names=[".*diy_joint.*"]),
+    #         "position_range": (-0.8, 0.8),
+    #     },
+    # )
 
 
 _FEET_BODIES = [".*_foot", ".*diy_base_link"]

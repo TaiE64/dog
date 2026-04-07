@@ -1,0 +1,942 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- Go2 机器狗 + DIY 机械腿 合并 URDF -->
+<!-- 前右腿 (FR) 的小腿部分被替换为 DIY leg_manipulator -->
+<!-- 前右腿的大腿 (FR_hip + FR_thigh) 保留不变 -->
+<robot name="go2_with_diy_leg">
+
+  <!-- ==================== Go2 机身 (base) ==================== -->
+  <link name="base">
+    <inertial>
+      <origin xyz="0.021112 0 -0.005366" rpy="0 0 0" />
+      <mass value="6.921" />
+      <inertia ixx="0.02448" ixy="0.00012166" ixz="0.0014849" iyy="0.098077" iyz="-3.12E-05" izz="0.107" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/go2_description/dae/base.dae" />
+      </geometry>
+      <material name="深色橡胶_001-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="白色logo_001-effect"><color rgba="1 1 1 1" /></material><material name="黑色贴纸_007-effect"><color rgba="0.009018 0.009018 0.009018 1" /></material><material name="黑色金属_007-effect"><color rgba="0.01341 0.01341 0.01341 1" /></material><material name="黑色塑料_003-effect"><color rgba="0.023455 0.023455 0.023455 1" /></material></visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <box size="0.3762 0.0935 0.114" />
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- ==================== Go2 头部 ==================== -->
+  <link name="Head_upper">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001" />
+      <inertia ixx="9.6e-06" ixy="0" ixz="0" iyy="9.6e-06" iyz="0" izz="9.6e-06" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder radius="0.05" length="0.09" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Head_upper_joint" type="fixed" dont_collapse="true">
+    <origin xyz="0.285 0 0.01" rpy="0 0 0" />
+    <parent link="base" />
+    <child link="Head_upper" />
+    <axis xyz="0 0 0" />
+  </joint>
+  <link name="Head_lower">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001" />
+      <inertia ixx="9.6e-06" ixy="0" ixz="0" iyy="9.6e-06" iyz="0" izz="9.6e-06" />
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <sphere radius="0.047" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Head_lower_joint" type="fixed" dont_collapse="true">
+    <origin xyz="0.008 0 -0.07" rpy="0 0 0" />
+    <parent link="Head_upper" />
+    <child link="Head_lower" />
+    <axis xyz="0 0 0" />
+  </joint>
+
+  <!-- ==================== 前左腿 FL (保留原版) ==================== -->
+  <link name="FL_hip">
+    <inertial>
+      <origin xyz="-0.0054 0.00194 -0.000105" rpy="0 0 0" />
+      <mass value="0.678" />
+      <inertia ixx="0.00048" ixy="-3.01E-06" ixz="1.11E-06" iyy="0.000884" iyz="-1.42E-06" izz="0.000596" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/go2_description/dae/hip.dae" />
+      </geometry>
+      <material name="深色橡胶_001-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
+    <collision>
+      <origin rpy="1.5707963267948966 0 0" xyz="0 0.08 0" />
+      <geometry>
+        <cylinder length="0.04" radius="0.046" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="FL_hip_joint" type="revolute">
+    <origin xyz="0.1934 0.0465 0" rpy="0 0 0" />
+    <parent link="base" />
+    <child link="FL_hip" />
+    <axis xyz="1 0 0" />
+    <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
+  </joint>
+  <link name="FL_hip_rotor">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0" />
+      <mass value="0.089" />
+      <inertia ixx="0.000111842" ixy="0.0" ixz="0.0" iyy="0.000059647" iyz="0.0" izz="0.000059647" />
+    </inertial>
+  </link>
+  <joint name="FL_hip_rotor_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0.11215 0.04675 0" />
+    <parent link="base" />
+    <child link="FL_hip_rotor" />
+  </joint>
+  <link name="FL_thigh">
+    <inertial>
+      <origin xyz="-0.00374 -0.0223 -0.0327" rpy="0 0 0" />
+      <mass value="1.152" />
+      <inertia ixx="0.00584" ixy="8.72E-05" ixz="-0.000289" iyy="0.0058" iyz="0.000808" izz="0.00103" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/go2_description/dae/thigh.dae" />
+      </geometry>
+      <material name="深色橡胶_003-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material_009-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
+    <collision>
+      <origin rpy="0 1.5707963267948966 0" xyz="0 0 -0.1065" />
+      <geometry>
+        <box size="0.213 0.0245 0.034" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="FL_thigh_joint" type="revolute">
+    <origin xyz="0 0.0955 0" rpy="0 0 0" />
+    <parent link="FL_hip" />
+    <child link="FL_thigh" />
+    <axis xyz="0 1 0" />
+    <limit lower="-1.5708" upper="3.4907" effort="23.7" velocity="30.1" />
+  </joint>
+  <link name="FL_thigh_rotor">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0" />
+      <mass value="0.089" />
+      <inertia ixx="0.000059647" ixy="0.0" ixz="0.0" iyy="0.000111842" iyz="0.0" izz="0.000059647" />
+    </inertial>
+  </link>
+  <joint name="FL_thigh_rotor_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 -0.00015 0" />
+    <parent link="FL_hip" />
+    <child link="FL_thigh_rotor" />
+  </joint>
+  <!-- ============================================================ -->
+  <!-- ======= DIY 机械腿 (替换 FL 小腿部分) ====================== -->
+  <joint name="FL_calf_joint" type="revolute">
+    <origin xyz="0 -0.002 -0.212" rpy="0 -1.5708 0" />
+    <parent link="FL_thigh" />
+    <child link="FL_diy_base_link" />
+    <axis xyz="0 1 0" />
+    <limit lower="-2.9" upper="-1.2" effort="45.43" velocity="15.70" />
+  </joint>
+
+  <link name="FL_diy_base_link">
+    <inertial>
+      <origin xyz="-0.102101858263051 -1.23372200670387E-05 0.0495364959218269" rpy="0 0 0" />
+      <mass value="0.228916745240302" />
+      <inertia ixx="7.32933157890681E-05" ixy="-1.48577654516967E-07" ixz="7.21766471076414E-05"
+               iyy="0.00061322332790674" iyz="2.15302205976865E-08" izz="0.000602631444620784" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/base_link.STL" />
+      </geometry>
+      <material name="diy_grey">
+        <color rgba="0.627450980392157 0.627450980392157 0.627450980392157 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="FL_diy_link1">
+    <inertial>
+      <origin xyz="-0.128815170246768 6.16693158052885E-05 0.0174844738870931" rpy="0 0 0" />
+      <mass value="0.0589546671844344" />
+      <inertia ixx="1.17826464867624E-05" ixy="1.13571487128267E-07" ixz="-7.96530718981461E-07"
+               iyy="1.49514869427638E-05" iyz="-3.89603257061317E-08" izz="1.35226508650578E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link1.STL" />
+      </geometry>
+      <material name="diy_grey">
+        <color rgba="0.627450980392157 0.627450980392157 0.627450980392157 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="FL_diy_joint1" type="prismatic">
+    <origin xyz="-0.022741 -5E-05 0.032" rpy="3.1416 0 0" />
+    <parent link="FL_diy_base_link" />
+    <child link="FL_diy_link1" />
+    <axis xyz="1 0 0" />
+    <limit lower="0" upper="0.1" effort="40" velocity="0.01" />
+  </joint>
+
+  <link name="FL_diy_link2">
+    <inertial>
+      <origin xyz="-0.0412400600572213 0.0290000049963766 -0.00237297655194358" rpy="0 0 0" />
+      <mass value="0.0492722298663148" />
+      <inertia ixx="1.6171917803228E-05" ixy="-1.43810043193834E-13" ixz="-2.73606234561682E-07"
+               iyy="1.49982082029405E-05" iyz="1.18466833635428E-13" izz="2.51424133329096E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link2.STL" />
+      </geometry>
+      <material name="diy_grey">
+        <color rgba="0.627450980392157 0.627450980392157 0.627450980392157 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link2.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="FL_diy_joint2" type="revolute">
+    <origin xyz="-0.145982705510586 -0.0292000000000024 0.0227" rpy="0 0 0" />
+    <parent link="FL_diy_link1" />
+    <child link="FL_diy_link2" />
+    <axis xyz="0 -1 0" />
+    <limit lower="-2.4" upper="0.67" effort="4.9" velocity="7.85" />
+  </joint>
+
+  <link name="FL_diy_link3">
+    <inertial>
+      <origin xyz="-0.0875706443775528 0.0012980092080234 0.0260546304711824" rpy="0 0 0" />
+      <mass value="0.111402715752738" />
+      <inertia ixx="4.56339135238866E-05" ixy="1.77867913646447E-06" ixz="5.58509130634157E-05"
+               iyy="0.000168660813444487" iyz="-8.191426226183E-07" izz="0.000137997912896648" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link3.STL" />
+      </geometry>
+      <material name="diy_grey">
+        <color rgba="0.627450980392157 0.627450980392157 0.627450980392157 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link3.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="FL_diy_joint3" type="revolute">
+    <origin xyz="-0.050675 0.029 0.017145" rpy="0 0 0" />
+    <parent link="FL_diy_link2" />
+    <child link="FL_diy_link3" />
+    <axis xyz="0.46021 0 0.88781" />
+    <limit lower="-1.42" upper="1.45" effort="1.39" velocity="10.47" />
+  </joint>
+
+  <link name="FL_diy_link4">
+    <inertial>
+      <origin xyz="-0.0320231399899398 0.0188395340678356 0.0196130289979088" rpy="0 0 0" />
+      <mass value="0.0268787641612815" />
+      <inertia ixx="2.60267203023457E-06" ixy="1.49718719392197E-07" ixz="2.82922055894807E-06"
+               iyy="1.15913002533176E-05" iyz="-4.94293134081021E-08" izz="1.03912131946971E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link4.STL" />
+      </geometry>
+      <material name="diy_grey">
+        <color rgba="0.627450980392157 0.627450980392157 0.627450980392157 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link4.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="FL_diy_joint4" type="revolute">
+    <origin xyz="-0.12194 -0.015927 0.044362" rpy="0 0 0" />
+    <parent link="FL_diy_link3" />
+    <child link="FL_diy_link4" />
+    <axis xyz="0.014315 0.99987 -0.0074203" />
+    <limit lower="-0.17" upper="1.4" effort="1.39" velocity="10.47" />
+  </joint>
+
+  <!-- ==================== 前右腿 FR — 大腿保留，小腿换成 DIY ==================== -->
+  <!-- FR 髋关节 + 大腿：原版保留 -->
+  <link name="FR_hip">
+    <inertial>
+      <origin xyz="-0.0054 -0.00194 -0.000105" rpy="0 0 0" />
+      <mass value="0.678" />
+      <inertia ixx="0.00048" ixy="3.01E-06" ixz="1.11E-06" iyy="0.000884" iyz="1.42E-06" izz="0.000596" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="3.1415 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/go2_description/dae/hip.dae" />
+      </geometry>
+      <material name="深色橡胶_001-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
+    <collision>
+      <origin rpy="1.5707963267948966 0 0" xyz="0 -0.08 0" />
+      <geometry>
+        <cylinder length="0.04" radius="0.046" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="FR_hip_joint" type="revolute">
+    <origin xyz="0.1934 -0.0465 0" rpy="0 0 0" />
+    <parent link="base" />
+    <child link="FR_hip" />
+    <axis xyz="1 0 0" />
+    <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
+  </joint>
+  <link name="FR_hip_rotor">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0" />
+      <mass value="0.089" />
+      <inertia ixx="0.000111842" ixy="0.0" ixz="0.0" iyy="0.000059647" iyz="0.0" izz="0.000059647" />
+    </inertial>
+  </link>
+  <joint name="FR_hip_rotor_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0.11215 -0.04675 0" />
+    <parent link="base" />
+    <child link="FR_hip_rotor" />
+  </joint>
+  <link name="FR_thigh">
+    <inertial>
+      <origin xyz="-0.00374 0.0223 -0.0327" rpy="0 0 0" />
+      <mass value="1.152" />
+      <inertia ixx="0.00584" ixy="-8.72E-05" ixz="-0.000289" iyy="0.0058" iyz="-0.000808" izz="0.00103" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/go2_description/dae/thigh_mirror.dae" />
+      </geometry>
+      <material name="深色橡胶_012-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material_011-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
+    <collision>
+      <origin rpy="0 1.5707963267948966 0" xyz="0 0 -0.1065" />
+      <geometry>
+        <box size="0.213 0.0245 0.034" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="FR_thigh_joint" type="revolute">
+    <origin xyz="0 -0.0955 0" rpy="0 0 0" />
+    <parent link="FR_hip" />
+    <child link="FR_thigh" />
+    <axis xyz="0 1 0" />
+    <limit lower="-1.5708" upper="3.4907" effort="23.7" velocity="30.1" />
+  </joint>
+  <link name="FR_thigh_rotor">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0" />
+      <mass value="0.089" />
+      <inertia ixx="0.000059647" ixy="0.0" ixz="0.0" iyy="0.000111842" iyz="0.0" izz="0.000059647" />
+    </inertial>
+  </link>
+  <joint name="FR_thigh_rotor_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0.00015 0" />
+    <parent link="FR_hip" />
+    <child link="FR_thigh_rotor" />
+  </joint>
+
+  <!-- ============================================================ -->
+  <!-- ======= DIY 机械腿 (替换 FR 小腿部分) ====================== -->
+  <!-- ============================================================ -->
+  <!-- 安装在 FR_thigh 末端，即原来 FR_calf_joint 的位置 -->
+  <!-- 原 FR_calf_joint: origin xyz="0 0 -0.213" (大腿底端) -->
+
+  <joint name="FR_calf_joint" type="revolute">
+    <origin xyz="0 0.002 -0.212" rpy="0 -1.5708 0" />
+    <parent link="FR_thigh" />
+    <child link="diy_base_link" />
+    <axis xyz="0 1 0" />
+    <limit lower="-2.9" upper="-1.2" effort="45.43" velocity="15.70" />
+  </joint>
+
+  <link name="diy_base_link">
+    <inertial>
+      <origin xyz="-0.102101858263051 -1.23372200670387E-05 0.0495364959218269" rpy="0 0 0" />
+      <mass value="0.228916745240302" />
+      <inertia ixx="7.32933157890681E-05" ixy="-1.48577654516967E-07" ixz="7.21766471076414E-05"
+               iyy="0.00061322332790674" iyz="2.15302205976865E-08" izz="0.000602631444620784" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/base_link.STL" />
+      </geometry>
+      <material name="diy_grey">
+        <color rgba="0.627450980392157 0.627450980392157 0.627450980392157 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="diy_link1">
+    <inertial>
+      <origin xyz="-0.128815170246768 6.16693158052885E-05 0.0174844738870931" rpy="0 0 0" />
+      <mass value="0.0589546671844344" />
+      <inertia ixx="1.17826464867624E-05" ixy="1.13571487128267E-07" ixz="-7.96530718981461E-07"
+               iyy="1.49514869427638E-05" iyz="-3.89603257061317E-08" izz="1.35226508650578E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link1.STL" />
+      </geometry>
+      <material name="diy_grey">
+        <color rgba="0.627450980392157 0.627450980392157 0.627450980392157 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link1.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="diy_joint1" type="prismatic">
+    <origin xyz="-0.022741 -5E-05 0.032" rpy="3.1416 0 0" />
+    <parent link="diy_base_link" />
+    <child link="diy_link1" />
+    <axis xyz="1 0 0" />
+    <limit lower="0" upper="0.1" effort="40" velocity="0.01" />
+  </joint>
+
+  <link name="diy_link2">
+    <inertial>
+      <origin xyz="-0.0412400600572213 0.0290000049963766 -0.00237297655194358" rpy="0 0 0" />
+      <mass value="0.0492722298663148" />
+      <inertia ixx="1.6171917803228E-05" ixy="-1.43810043193834E-13" ixz="-2.73606234561682E-07"
+               iyy="1.49982082029405E-05" iyz="1.18466833635428E-13" izz="2.51424133329096E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link2.STL" />
+      </geometry>
+      <material name="diy_grey">
+        <color rgba="0.627450980392157 0.627450980392157 0.627450980392157 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link2.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="diy_joint2" type="revolute">
+    <origin xyz="-0.145982705510586 -0.0292000000000024 0.0227" rpy="0 0 0" />
+    <parent link="diy_link1" />
+    <child link="diy_link2" />
+    <axis xyz="0 -1 0" />
+    <limit lower="-2.4" upper="0.67" effort="4.9" velocity="7.85" />
+  </joint>
+
+  <link name="diy_link3">
+    <inertial>
+      <origin xyz="-0.0875706443775528 0.0012980092080234 0.0260546304711824" rpy="0 0 0" />
+      <mass value="0.111402715752738" />
+      <inertia ixx="4.56339135238866E-05" ixy="1.77867913646447E-06" ixz="5.58509130634157E-05"
+               iyy="0.000168660813444487" iyz="-8.191426226183E-07" izz="0.000137997912896648" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link3.STL" />
+      </geometry>
+      <material name="diy_grey">
+        <color rgba="0.627450980392157 0.627450980392157 0.627450980392157 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link3.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="diy_joint3" type="revolute">
+    <origin xyz="-0.050675 0.029 0.017145" rpy="0 0 0" />
+    <parent link="diy_link2" />
+    <child link="diy_link3" />
+    <axis xyz="0.46021 0 0.88781" />
+    <limit lower="-1.42" upper="1.45" effort="1.39" velocity="10.47" />
+  </joint>
+
+  <link name="diy_link4">
+    <inertial>
+      <origin xyz="-0.0320231399899398 0.0188395340678356 0.0196130289979088" rpy="0 0 0" />
+      <mass value="0.0268787641612815" />
+      <inertia ixx="2.60267203023457E-06" ixy="1.49718719392197E-07" ixz="2.82922055894807E-06"
+               iyy="1.15913002533176E-05" iyz="-4.94293134081021E-08" izz="1.03912131946971E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link4.STL" />
+      </geometry>
+      <material name="diy_grey">
+        <color rgba="0.627450980392157 0.627450980392157 0.627450980392157 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/meshes/link4.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="diy_joint4" type="revolute">
+    <origin xyz="-0.12194 -0.015927 0.044362" rpy="0 0 0" />
+    <parent link="diy_link3" />
+    <child link="diy_link4" />
+    <axis xyz="0.014315 0.99987 -0.0074203" />
+    <limit lower="-0.17" upper="1.4" effort="1.39" velocity="10.47" />
+  </joint>
+
+  <!-- ==================== 后左腿 RL (保留原版) ==================== -->
+  <link name="RL_hip">
+    <inertial>
+      <origin xyz="0.0054 0.00194 -0.000105" rpy="0 0 0" />
+      <mass value="0.678" />
+      <inertia ixx="0.00048" ixy="3.01E-06" ixz="-1.11E-06" iyy="0.000884" iyz="-1.42E-06" izz="0.000596" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 3.1415 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/go2_description/dae/hip.dae" />
+      </geometry>
+      <material name="深色橡胶_001-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
+    <collision>
+      <origin rpy="1.5707963267948966 0 0" xyz="0 0.08 0" />
+      <geometry>
+        <cylinder length="0.04" radius="0.046" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="RL_hip_joint" type="revolute">
+    <origin xyz="-0.1934 0.0465 0" rpy="0 0 0" />
+    <parent link="base" />
+    <child link="RL_hip" />
+    <axis xyz="1 0 0" />
+    <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
+  </joint>
+  <link name="RL_hip_rotor">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0" />
+      <mass value="0.089" />
+      <inertia ixx="0.000111842" ixy="0.0" ixz="0.0" iyy="0.000059647" iyz="0.0" izz="0.000059647" />
+    </inertial>
+  </link>
+  <joint name="RL_hip_rotor_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="-0.11215 0.04675 0" />
+    <parent link="base" />
+    <child link="RL_hip_rotor" />
+  </joint>
+  <link name="RL_thigh">
+    <inertial>
+      <origin xyz="-0.00374 -0.0223 -0.0327" rpy="0 0 0" />
+      <mass value="1.152" />
+      <inertia ixx="0.00584" ixy="8.72E-05" ixz="-0.000289" iyy="0.0058" iyz="0.000808" izz="0.00103" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/go2_description/dae/thigh.dae" />
+      </geometry>
+      <material name="深色橡胶_003-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material_009-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
+    <collision>
+      <origin rpy="0 1.5707963267948966 0" xyz="0 0 -0.1065" />
+      <geometry>
+        <box size="0.213 0.0245 0.034" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="RL_thigh_joint" type="revolute">
+    <origin xyz="0 0.0955 0" rpy="0 0 0" />
+    <parent link="RL_hip" />
+    <child link="RL_thigh" />
+    <axis xyz="0 1 0" />
+    <limit lower="-0.5236" upper="4.5379" effort="23.7" velocity="30.1" />
+  </joint>
+  <link name="RL_thigh_rotor">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0" />
+      <mass value="0.089" />
+      <inertia ixx="0.000059647" ixy="0.0" ixz="0.0" iyy="0.000111842" iyz="0.0" izz="0.000059647" />
+    </inertial>
+  </link>
+  <joint name="RL_thigh_rotor_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 -0.00015 0" />
+    <parent link="RL_hip" />
+    <child link="RL_thigh_rotor" />
+  </joint>
+  <link name="RL_calf">
+    <inertial>
+      <origin xyz="0.00548 -0.000975 -0.115" rpy="0 0 0" />
+      <mass value="0.154" />
+      <inertia ixx="0.00108" ixy="3.4E-07" ixz="1.72E-05" iyy="0.0011" iyz="8.28E-06" izz="3.29E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/go2_description/dae/calf.dae" />
+      </geometry>
+      <material name="黑色足端_005-effect"><color rgba="0 0 0 1" /></material><material name="深色橡胶_005-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material></visual>
+    <collision>
+      <origin rpy="0 -0.2 0" xyz="0.01 0 -0.06" />
+      <geometry>
+        <cylinder length="0.12" radius="0.013" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="RL_calf_joint" type="revolute">
+    <origin xyz="0 0 -0.213" rpy="0 0 0" />
+    <parent link="RL_thigh" />
+    <child link="RL_calf" />
+    <axis xyz="0 1 0" />
+    <limit lower="-2.7227" upper="-0.83776" effort="45.43" velocity="15.70" />
+  </joint>
+  <link name="RL_calflower">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001" />
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <cylinder length="0.065" radius="0.011" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="RL_calflower_joint" type="fixed">
+    <origin xyz="0.020 0 -0.148" rpy="0 0.05 0" />
+    <parent link="RL_calf" />
+    <child link="RL_calflower" />
+    <axis xyz="0 0 0" />
+  </joint>
+  <link name="RL_calflower1">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001" />
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <cylinder length="0.03" radius="0.0155" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="RL_calflower1_joint" type="fixed">
+    <origin xyz="-0.01 0 -0.04" rpy="0 0.48 0" />
+    <parent link="RL_calflower" />
+    <child link="RL_calflower1" />
+    <axis xyz="0 0 0" />
+  </joint>
+  <link name="RL_calf_rotor">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0" />
+      <mass value="0.089" />
+      <inertia ixx="0.000059647" ixy="0.0" ixz="0.0" iyy="0.000111842" iyz="0.0" izz="0.000059647" />
+    </inertial>
+  </link>
+  <joint name="RL_calf_rotor_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 -0.03235 0" />
+    <parent link="RL_thigh" />
+    <child link="RL_calf_rotor" />
+  </joint>
+  <link name="RL_foot">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.04" />
+      <inertia ixx="9.6e-06" ixy="0" ixz="0" iyy="9.6e-06" iyz="0" izz="9.6e-06" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/go2_description/dae/foot.dae" />
+      </geometry>
+      <material name="黑色足端_007-effect"><color rgba="0 0 0 1" /></material></visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.002 0 0" />
+      <geometry>
+        <sphere radius="0.022" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="RL_foot_joint" type="fixed" dont_collapse="true">
+    <origin xyz="0 0 -0.213" rpy="0 0 0" />
+    <parent link="RL_calf" />
+    <child link="RL_foot" />
+    <axis xyz="0 0 0" />
+  </joint>
+
+  <!-- ==================== 后右腿 RR (保留原版) ==================== -->
+  <link name="RR_hip">
+    <inertial>
+      <origin xyz="0.0054 -0.00194 -0.000105" rpy="0 0 0" />
+      <mass value="0.678" />
+      <inertia ixx="0.00048" ixy="-3.01E-06" ixz="-1.11E-06" iyy="0.000884" iyz="1.42E-06" izz="0.000596" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="3.1415 3.1415 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/go2_description/dae/hip.dae" />
+      </geometry>
+      <material name="深色橡胶_001-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
+    <collision>
+      <origin rpy="1.5707963267948966 0 0" xyz="0 -0.08 0" />
+      <geometry>
+        <cylinder length="0.04" radius="0.046" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="RR_hip_joint" type="revolute">
+    <origin xyz="-0.1934 -0.0465 0" rpy="0 0 0" />
+    <parent link="base" />
+    <child link="RR_hip" />
+    <axis xyz="1 0 0" />
+    <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
+  </joint>
+  <link name="RR_hip_rotor">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0" />
+      <mass value="0.089" />
+      <inertia ixx="0.000111842" ixy="0.0" ixz="0.0" iyy="0.000059647" iyz="0.0" izz="0.000059647" />
+    </inertial>
+  </link>
+  <joint name="RR_hip_rotor_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="-0.11215 -0.04675 0" />
+    <parent link="base" />
+    <child link="RR_hip_rotor" />
+  </joint>
+  <link name="RR_thigh">
+    <inertial>
+      <origin xyz="-0.00374 0.0223 -0.0327" rpy="0 0 0" />
+      <mass value="1.152" />
+      <inertia ixx="0.00584" ixy="-8.72E-05" ixz="-0.000289" iyy="0.0058" iyz="-0.000808" izz="0.00103" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/go2_description/dae/thigh_mirror.dae" />
+      </geometry>
+      <material name="深色橡胶_012-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material_011-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
+    <collision>
+      <origin rpy="0 1.5707963267948966 0" xyz="0 0 -0.1065" />
+      <geometry>
+        <box size="0.213 0.0245 0.034" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="RR_thigh_joint" type="revolute">
+    <origin xyz="0 -0.0955 0" rpy="0 0 0" />
+    <parent link="RR_hip" />
+    <child link="RR_thigh" />
+    <axis xyz="0 1 0" />
+    <limit lower="-0.5236" upper="4.5379" effort="23.7" velocity="30.1" />
+  </joint>
+  <link name="RR_thigh_rotor">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0" />
+      <mass value="0.089" />
+      <inertia ixx="0.000059647" ixy="0.0" ixz="0.0" iyy="0.000111842" iyz="0.0" izz="0.000059647" />
+    </inertial>
+  </link>
+  <joint name="RR_thigh_rotor_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0.00015 0" />
+    <parent link="RR_hip" />
+    <child link="RR_thigh_rotor" />
+  </joint>
+  <link name="RR_calf">
+    <inertial>
+      <origin xyz="0.00548 0.000975 -0.115" rpy="0 0 0" />
+      <mass value="0.154" />
+      <inertia ixx="0.00108" ixy="-3.4E-07" ixz="1.72E-05" iyy="0.0011" iyz="-8.28E-06" izz="3.29E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/go2_description/dae/calf_mirror.dae" />
+      </geometry>
+      <material name="黑色足端_006-effect"><color rgba="0 0 0 1" /></material><material name="深色橡胶_007-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material></visual>
+    <collision>
+      <origin rpy="0 -0.2 0" xyz="0.01 0 -0.06" />
+      <geometry>
+        <cylinder length="0.12" radius="0.013" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="RR_calf_joint" type="revolute">
+    <origin xyz="0 0 -0.213" rpy="0 0 0" />
+    <parent link="RR_thigh" />
+    <child link="RR_calf" />
+    <axis xyz="0 1 0" />
+    <limit lower="-2.7227" upper="-0.83776" effort="45.43" velocity="15.70" />
+  </joint>
+  <link name="RR_calflower">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001" />
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <cylinder length="0.065" radius="0.011" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="RR_calflower_joint" type="fixed">
+    <origin xyz="0.020 0 -0.148" rpy="0 0.05 0" />
+    <parent link="RR_calf" />
+    <child link="RR_calflower" />
+    <axis xyz="0 0 0" />
+  </joint>
+  <link name="RR_calflower1">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001" />
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <cylinder length="0.03" radius="0.0155" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="RR_calflower1_joint" type="fixed">
+    <origin xyz="-0.01 0 -0.04" rpy="0 0.48 0" />
+    <parent link="RR_calflower" />
+    <child link="RR_calflower1" />
+    <axis xyz="0 0 0" />
+  </joint>
+  <link name="RR_calf_rotor">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0" />
+      <mass value="0.089" />
+      <inertia ixx="0.000059647" ixy="0.0" ixz="0.0" iyy="0.000111842" iyz="0.0" izz="0.000059647" />
+    </inertial>
+  </link>
+  <joint name="RR_calf_rotor_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0.03235 0" />
+    <parent link="RR_thigh" />
+    <child link="RR_calf_rotor" />
+  </joint>
+  <link name="RR_foot">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.04" />
+      <inertia ixx="9.6e-06" ixy="0" ixz="0" iyy="9.6e-06" iyz="0" izz="9.6e-06" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="/home/taie/unitree_rl_lab/leg_manipulator/go2_description/dae/foot.dae" />
+      </geometry>
+      <material name="黑色足端_007-effect"><color rgba="0 0 0 1" /></material></visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.002 0 0" />
+      <geometry>
+        <sphere radius="0.022" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="RR_foot_joint" type="fixed" dont_collapse="true">
+    <origin xyz="0 0 -0.213" rpy="0 0 0" />
+    <parent link="RR_calf" />
+    <child link="RR_foot" />
+    <axis xyz="0 0 0" />
+  </joint>
+
+  <!-- ==================== 传感器 ==================== -->
+  <link name="imu">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001" />
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+  </link>
+  <joint name="imu_joint" type="fixed">
+    <origin xyz="-0.02557 0 0.04232" rpy="0 0 0" />
+    <parent link="base" />
+    <child link="imu" />
+    <axis xyz="0 0 0" />
+  </joint>
+  <link name="radar">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001" />
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+  </link>
+  <joint name="radar_joint" type="fixed">
+    <origin xyz="0.28945 0 -0.046825" rpy="0 2.8782 0" />
+    <parent link="base" />
+    <child link="radar" />
+    <axis xyz="0 0 0" />
+  </joint>
+  <joint name="front_camera_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0.32715 -0.00003 0.04297" />
+      <parent link="base" />
+      <child link="front_camera" />
+  </joint>
+  <link name="front_camera">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.001" />
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+  </link>
+
+</robot>
