@@ -211,6 +211,37 @@ Reference: "Robust Pedipulation on Quadruped Robots via Gravitational-moment Min
 """
 
 
+def walk_toward_goal(
+    env: ManagerBasedRLEnv,
+    command_name: str = "ee_goal",
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward for walking TOWARD the goal (paper: v_xy tracking of base_cmd).
+
+    Computes dot product between robot's base velocity and direction to goal.
+    Positive reward when moving toward goal, negative when moving away.
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    command = env.command_manager.get_command(command_name)
+    G_d = command[:, 0:3]  # raw goal in body frame
+
+    # Direction to goal in body frame (xy plane)
+    goal_dir_xy = G_d[:, :2]  # (N, 2)
+    goal_dist = torch.norm(goal_dir_xy, dim=-1, keepdim=True).clamp(min=0.1)
+    goal_dir_unit = goal_dir_xy / goal_dist  # (N, 2) unit vector
+
+    # Robot's base velocity in body frame (xy)
+    vel_xy = asset.data.root_lin_vel_b[:, :2]  # (N, 2)
+
+    # Dot product: positive = moving toward goal, clamped to max speed reward
+    forward_speed = torch.sum(vel_xy * goal_dir_unit, dim=-1)  # (N,)
+    reward = torch.clamp(forward_speed, min=-0.5, max=0.5)  # cap at 0.5 m/s
+
+    # Only reward when goal is far (>0.5m), don't penalize standing near goal
+    far_enough = (goal_dist.squeeze(-1) > 0.5).float()
+    return reward * far_enough
+
+
 def gravitational_moment_reward(
     env: ManagerBasedRLEnv,
     feet_cfg: SceneEntityCfg,

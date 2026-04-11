@@ -15,6 +15,7 @@ from unitree_rl_lab.assets.robots.unitree import UNITREE_GO2_DIY_LEG_CFG as ROBO
 from unitree_rl_lab.tasks.locomotion import mdp
 from unitree_rl_lab.tasks.locomotion.mdp.events import randomize_joint_position_targets
 from unitree_rl_lab.tasks.locomotion.mdp.commands.goal_position_command import GoalPositionCommandCfg
+from unitree_rl_lab.tasks.locomotion.mdp.commands.goal_directed_velocity import GoalDirectedVelocityCommandCfg
 from unitree_rl_lab.tasks.locomotion.robots.go2.velocity_env_cfg import (
     ActionsCfg as Go2ActionsCfg,
     CommandsCfg as Go2CommandsCfg,
@@ -294,8 +295,9 @@ _FEET_BODIES_CFG = SceneEntityCfg("robot", body_names=_FEET_BODIES)
 
 @configclass
 class ALaMCommandsCfg(Go2CommandsCfg):
-    """Velocity + world-frame EE goal (proximity check + reachability map)."""
+    """Goal-directed velocity + world-frame EE goal."""
 
+    # ee_goal MUST be defined BEFORE base_velocity so it updates first
     ee_goal = GoalPositionCommandCfg(
         asset_name="robot",
         resampling_time_range=(5.0, 10.0),
@@ -307,6 +309,17 @@ class ALaMCommandsCfg(Go2CommandsCfg):
             pos_x=(0.1, 0.6),
             pos_y=(-0.3, 0.3),
             pos_z=(-0.2, 0.1),
+        ),
+    )
+
+    # Override: velocity direction toward goal, speed randomly sampled
+    base_velocity = GoalDirectedVelocityCommandCfg(
+        asset_name="robot",
+        resampling_time_range=(10.0, 10.0),
+        goal_command_name="ee_goal",
+        stand_threshold=0.5,
+        ranges=GoalDirectedVelocityCommandCfg.Ranges(
+            speed=(0.0, 0.3),
         ),
     )
 
@@ -363,7 +376,14 @@ class ALaMRewardsCfg(RewardsCfg):
     )
 
     # ---- Manipulation task (Table 3) ----
-    # Projected goal tracking G_B — curriculum: 0 → 8.0
+
+    # Raw goal tracking G_d — distance-based reward for approaching goal
+    ee_raw_tracking = RewTerm(
+        func=mdp.ee_raw_goal_tracking, weight=0.0,
+        params={"command_name": "ee_goal", "ee_cfg": _EE_BODIES_CFG, "sigma": 2.0},
+    )
+    # Projected goal tracking G_B — precision reaching after arriving nearby
+    # sigma=0.1: sharp gradient for final precision (exp(-0.1m/0.1)=0.37)
     ee_tracking = RewTerm(
         func=mdp.ee_goal_tracking, weight=0.0,
         params={"command_name": "ee_goal", "ee_cfg": _EE_BODIES_CFG, "sigma": 0.1},
@@ -388,6 +408,9 @@ class ALaMRewardsCfg(RewardsCfg):
 class ALaMCurriculumCfg(Go2CurriculumCfg):
     """Curriculum: ramp ee_tracking + raw tracking + manip ratio."""
 
+    # Disable velocity command curriculum (incompatible with GoalDirectedVelocityCommand)
+    lin_vel_cmd_levels = None
+
     manip_tracking_levels = CurrTerm(
         func=mdp.manipulation_reward_curriculum,
         params={
@@ -400,6 +423,18 @@ class ALaMCurriculumCfg(Go2CurriculumCfg):
             "command_name": "ee_goal",
             "max_manip_ratio": 1.0,
             "manip_ratio_step": 0.1,
+        },
+    )
+    # Expand goal range as the robot masters nearby targets
+    goal_range_levels = CurrTerm(
+        func=mdp.goal_range_curriculum,
+        params={
+            "command_name": "ee_goal",
+            "tracking_term_name": "ee_tracking",
+            "tracking_threshold": 0.5,
+            "max_range": 3.0,
+            "range_step": 0.3,
+            "upgrade_interval": 3000,
         },
     )
 

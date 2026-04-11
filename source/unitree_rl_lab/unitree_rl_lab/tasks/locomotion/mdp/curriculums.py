@@ -66,6 +66,43 @@ def diy_randomization_levels(
     return torch.tensor(current_range, device=env.device)
 
 
+def goal_range_curriculum(
+    env: ManagerBasedRLEnv,
+    env_ids: Sequence[int],
+    command_name: str = "ee_goal",
+    tracking_term_name: str = "ee_tracking",
+    tracking_threshold: float = 0.5,
+    max_range: float = 3.0,
+    range_step: float = 0.3,
+    upgrade_interval: int = 3000,
+) -> torch.Tensor:
+    """Gradually expand goal sampling range as manipulation improves.
+
+    When ee_tracking reward is high (robot can reach nearby goals),
+    expand the goal range so it must walk further.
+    """
+    if not hasattr(env, "_goal_range_last_step"):
+        env._goal_range_last_step = env.common_step_counter
+
+    command_term = env.command_manager.get_term(command_name)
+    current_max_x = command_term.cfg.ranges.pos_x[1]
+
+    if env.common_step_counter - env._goal_range_last_step >= upgrade_interval:
+        # Check if ee_tracking is good enough
+        tracking_reward = torch.mean(
+            env.reward_manager._episode_sums[tracking_term_name][env_ids]
+        ) / env.max_episode_length_s
+
+        if tracking_reward > tracking_threshold:
+            new_max = min(current_max_x + range_step, max_range)
+            command_term.cfg.ranges.pos_x = (-new_max, new_max)
+            command_term.cfg.ranges.pos_y = (-new_max, new_max)
+
+        env._goal_range_last_step = env.common_step_counter
+
+    return torch.tensor(current_max_x, device=env.device)
+
+
 def manipulation_reward_curriculum(
     env: ManagerBasedRLEnv,
     env_ids: Sequence[int],
@@ -104,7 +141,10 @@ def manipulation_reward_curriculum(
             # Ramp ee_tracking weight
             new_weight = min(current_weight + step_size, max_weight)
             reward_cfg.weight = new_weight
-            # Also ramp raw goal tracking if it exists
+            # Also ramp walk_to_goal and raw goal tracking if they exist
+            if "walk_to_goal" in env.reward_manager.active_terms:
+                walk_cfg = env.reward_manager.get_term_cfg("walk_to_goal")
+                walk_cfg.weight = min(walk_cfg.weight + step_size * 0.5, max_weight * 0.5)
             if "ee_raw_tracking" in env.reward_manager.active_terms:
                 raw_cfg = env.reward_manager.get_term_cfg("ee_raw_tracking")
                 raw_cfg.weight = min(raw_cfg.weight + step_size * 0.5, max_weight * 0.5)

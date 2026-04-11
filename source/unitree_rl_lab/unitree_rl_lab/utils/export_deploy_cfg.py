@@ -44,7 +44,8 @@ def export_deploy_cfg(env: ManagerBasedRLEnv, log_dir):
         else:
             ranges = env.cfg.commands.base_velocity.ranges.to_dict()
         for item_name in ["lin_vel_x", "lin_vel_y", "ang_vel_z"]:
-            ranges[item_name] = list(ranges[item_name])
+            if item_name in ranges:
+                ranges[item_name] = list(ranges[item_name])
         cfg["commands"]["base_velocity"]["ranges"] = ranges
 
     # --- actions ---
