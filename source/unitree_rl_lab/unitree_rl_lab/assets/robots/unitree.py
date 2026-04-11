@@ -160,7 +160,7 @@ UNITREE_GO2_DIY_LEG_CFG = UnitreeArticulationCfg(
         "diy_prismatic": IdealPDActuatorCfg(
             joint_names_expr=[".*diy_joint1"],
             effort_limit=40.0,
-            velocity_limit=0.01,
+            velocity_limit=0.03,  # 3cm/s actual motor speed
             stiffness=100.0,
             damping=5.0,
         ),

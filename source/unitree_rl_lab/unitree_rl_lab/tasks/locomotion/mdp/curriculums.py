@@ -66,6 +66,57 @@ def diy_randomization_levels(
     return torch.tensor(current_range, device=env.device)
 
 
+def manipulation_reward_curriculum(
+    env: ManagerBasedRLEnv,
+    env_ids: Sequence[int],
+    reward_term_name: str = "ee_tracking",
+    max_weight: float = 8.0,
+    step_size: float = 0.5,
+    upgrade_interval: int = 2000,
+    stability_term_name: str = "alive",
+    stability_threshold: float = 0.3,
+    command_name: str = "ee_goal",
+    max_manip_ratio: float = 1.0,
+    manip_ratio_step: float = 0.1,
+) -> torch.Tensor:
+    """Gradually increase manipulation difficulty as locomotion stabilizes.
+
+    Ramps up:
+    1. ee_tracking reward weight: 0 → max_weight
+    2. ee_raw_tracking reward weight: 0 → max_weight * 0.5
+    3. rel_manip_envs: fraction of 3-legged envs → max_manip_ratio
+    """
+    # Use env-local state instead of module globals
+    if not hasattr(env, "_manip_curriculum_last_step"):
+        env._manip_curriculum_last_step = env.common_step_counter
+
+    reward_cfg = env.reward_manager.get_term_cfg(reward_term_name)
+    current_weight = reward_cfg.weight
+    command_term = env.command_manager.get_term(command_name)
+
+    if env.common_step_counter - env._manip_curriculum_last_step >= upgrade_interval:
+        stability_reward = torch.mean(
+            env.reward_manager._episode_sums[stability_term_name][env_ids]
+        ) / env.max_episode_length_s
+        stability_cfg = env.reward_manager.get_term_cfg(stability_term_name)
+
+        if stability_reward > stability_cfg.weight * stability_threshold:
+            # Ramp ee_tracking weight
+            new_weight = min(current_weight + step_size, max_weight)
+            reward_cfg.weight = new_weight
+            # Also ramp raw goal tracking if it exists
+            if "ee_raw_tracking" in env.reward_manager.active_terms:
+                raw_cfg = env.reward_manager.get_term_cfg("ee_raw_tracking")
+                raw_cfg.weight = min(raw_cfg.weight + step_size * 0.5, max_weight * 0.5)
+            # Ramp manipulation env ratio toward 100%
+            new_ratio = min(command_term.cfg.rel_manip_envs + manip_ratio_step, max_manip_ratio)
+            command_term.cfg.rel_manip_envs = new_ratio
+
+        env._manip_curriculum_last_step = env.common_step_counter
+
+    return torch.tensor(reward_cfg.weight, device=env.device)
+
+
 def ang_vel_cmd_levels(
     env: ManagerBasedRLEnv,
     env_ids: Sequence[int],

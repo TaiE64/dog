@@ -205,6 +205,189 @@ Other rewards.
 """
 
 
+"""
+ALaM rewards: gravitational moment minimization & manipulation.
+Reference: "Robust Pedipulation on Quadruped Robots via Gravitational-moment Minimization"
+"""
+
+
+def gravitational_moment_reward(
+    env: ManagerBasedRLEnv,
+    feet_cfg: SceneEntityCfg,
+    sigma: float = 10.0,
+    command_name: str = "ee_goal",
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward for minimizing the gravitational moment about the centroid of LOCOMOTION feet (CoF).
+
+    Uses leg_state to exclude the manipulation foot from CoF calculation.
+    Feet/leg_state order: [FL, FR, RL, RR] (matches URDF).
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    com_pos = asset.data.root_com_pos_w  # (N, 3)
+    feet_pos = asset.data.body_pos_w[:, feet_cfg.body_ids, :]  # (N, num_feet, 3)
+    # Get leg_state to weight feet (exclude manipulation foot)
+    try:
+        command = env.command_manager.get_command(command_name)
+        leg_state = command[:, 6:10]  # (N, 4) — 1=loco, 0=manip
+        weights = leg_state.unsqueeze(-1)  # (N, 4, 1)
+        weighted_pos = feet_pos[:, :, :2] * weights[:, :, :1].expand_as(feet_pos[:, :, :2])
+        num_loco = leg_state.sum(dim=-1, keepdim=True).clamp(min=1)  # (N, 1)
+        cof_xy = weighted_pos.sum(dim=1) / num_loco  # (N, 2)
+    except Exception:
+        cof_xy = feet_pos[:, :, :2].mean(dim=1)
+    com_xy = com_pos[:, :2]
+    moment_magnitude = torch.norm(com_xy - cof_xy, dim=-1)
+    return torch.exp(-moment_magnitude / sigma)
+
+
+def locomotion_feet_area_reward(
+    env: ManagerBasedRLEnv,
+    feet_cfg: SceneEntityCfg,
+    sigma: float = 0.05,
+    command_name: str = "ee_goal",
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward for maximizing the support polygon area of LOCOMOTION feet only.
+
+    Uses the shoelace formula on locomotion feet projected to xy-plane.
+    Manipulation foot is excluded via leg_state.
+    """
+    asset: Articulation = env.scene[asset_cfg.name]
+    feet_pos = asset.data.body_pos_w[:, feet_cfg.body_ids, :2]  # (N, num_feet, 2)
+    # Compute centroid
+    centroid = feet_pos.mean(dim=1, keepdim=True)  # (num_envs, 1, 2)
+    # Sort by angle from centroid to form convex polygon
+    diff = feet_pos - centroid  # (num_envs, num_feet, 2)
+    angles = torch.atan2(diff[:, :, 1], diff[:, :, 0])  # (num_envs, num_feet)
+    sorted_indices = torch.argsort(angles, dim=1)
+    # Gather sorted positions
+    sorted_feet = torch.gather(feet_pos, 1, sorted_indices.unsqueeze(-1).expand_as(feet_pos))
+    # Shoelace formula for polygon area
+    n = sorted_feet.shape[1]
+    x = sorted_feet[:, :, 0]  # (num_envs, n)
+    y = sorted_feet[:, :, 1]
+    # sum(x_i * y_{i+1} - x_{i+1} * y_i)
+    x_next = torch.roll(x, -1, dims=1)
+    y_next = torch.roll(y, -1, dims=1)
+    area = 0.5 * torch.abs(torch.sum(x * y_next - x_next * y, dim=1))  # (num_envs,)
+    return torch.clamp(torch.exp(area / sigma) - 1.0, max=1.0)
+
+
+def _get_manip_ee_pos_b(env: ManagerBasedRLEnv, ee_cfg: SceneEntityCfg) -> torch.Tensor:
+    """Helper: get manipulation EE position in base frame. (N, 3)"""
+    asset: Articulation = env.scene[ee_cfg.name]
+    ee_pos_w = asset.data.body_pos_w[:, ee_cfg.body_ids, :]
+    ee_pos_w_mean = ee_pos_w.mean(dim=1)
+    ee_rel = ee_pos_w_mean - asset.data.root_pos_w
+    return quat_apply_inverse(asset.data.root_quat_w, ee_rel)
+
+
+def ee_goal_tracking(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    ee_cfg: SceneEntityCfg,
+    sigma: float = 0.1,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward for tracking the PROJECTED goal G_B (paper Table 3).
+
+    Command layout: [G_d(3), G_B(3), leg_state(4)].
+    Tracks G_B (indices 3:6), the reachability-projected goal.
+    """
+    command = env.command_manager.get_command(command_name)
+    G_B = command[:, 3:6]  # projected goal in base frame
+    ee_pos_b = _get_manip_ee_pos_b(env, ee_cfg)
+    error = torch.norm(ee_pos_b - G_B, dim=-1)
+    return torch.exp(-error / sigma)
+
+
+def ee_raw_goal_tracking(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    ee_cfg: SceneEntityCfg,
+    sigma: float = 0.1,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Reward for tracking the RAW goal G_d (paper Table 3).
+
+    Command layout: [G_d(3), G_B(3), leg_state(4)].
+    Tracks G_d (indices 0:3), the un-projected goal. This reward keeps
+    increasing as the robot walks closer to the goal.
+    """
+    command = env.command_manager.get_command(command_name)
+    G_d = command[:, 0:3]  # raw goal in base frame
+    ee_pos_b = _get_manip_ee_pos_b(env, ee_cfg)
+    error = torch.norm(ee_pos_b - G_d, dim=-1)
+    return torch.exp(-error / sigma)
+
+
+def action_smoothness_l2(
+    env: ManagerBasedRLEnv,
+) -> torch.Tensor:
+    """Second-order action smoothness penalty (paper Table 2, w11).
+
+    Penalizes: ||a_t - 2*a_{t-1} + a_{t-2}||^2
+    Resets history at episode boundaries.
+    """
+    action = env.action_manager.action
+    prev = env.action_manager.prev_action
+    if not hasattr(env, "_alam_prev_prev_action"):
+        env._alam_prev_prev_action = torch.zeros_like(action)
+    prev_prev = env._alam_prev_prev_action
+    # Reset history at episode start (episode_length_buf == 0 means just reset)
+    reset_mask = (env.episode_length_buf <= 1).unsqueeze(-1)
+    prev_prev = torch.where(reset_mask, torch.zeros_like(prev_prev), prev_prev)
+    smoothness = torch.sum(torch.square(action - 2 * prev + prev_prev), dim=-1)
+    # Update history
+    env._alam_prev_prev_action = prev.clone()
+    return smoothness
+
+
+def soft_contact_reward(
+    env: ManagerBasedRLEnv,
+    sensor_cfg: SceneEntityCfg,
+) -> torch.Tensor:
+    """Soft contact reward (paper Table 2, w12).
+
+    Rewards feet making gentle contact (low force magnitude).
+    Returns sum of contact force magnitudes for locomotion feet.
+    """
+    contact_sensor = env.scene.sensors[sensor_cfg.name]
+    forces = contact_sensor.data.net_forces_w[:, sensor_cfg.body_ids, :]  # (N, num_feet, 3)
+    force_mag = torch.norm(forces, dim=-1)  # (N, num_feet)
+    return torch.sum(force_mag, dim=-1)
+
+
+def diy_joint_vel_penalty(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Penalize high velocities on the DIY manipulation joints."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    return torch.sum(torch.square(asset.data.joint_vel[:, asset_cfg.joint_ids]), dim=-1)
+
+
+def diy_joint_acc_penalty(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """Penalize acceleration (jerk) on the DIY manipulation joints."""
+    asset: Articulation = env.scene[asset_cfg.name]
+    return torch.sum(torch.square(asset.data.joint_acc[:, asset_cfg.joint_ids]), dim=-1)
+
+
+def diy_action_rate(
+    env: ManagerBasedRLEnv,
+    loco_action_dim: int = 12,
+) -> torch.Tensor:
+    """Penalize rate of change of the manipulation (DIY) portion of the action."""
+    # Actions are [loco(12), manip(8)]; take the manip slice
+    manip_actions = env.action_manager.action[:, loco_action_dim:]
+    manip_prev = env.action_manager.prev_action[:, loco_action_dim:]
+    return torch.sum(torch.square(manip_actions - manip_prev), dim=-1)
+
+
 def joint_mirror(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg, mirror_joints: list[list[str]]) -> torch.Tensor:
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]

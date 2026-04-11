@@ -9,11 +9,15 @@ from isaaclab.managers import CurriculumTermCfg as CurrTerm
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.utils import configclass
 
+from isaaclab.envs.mdp.observations import generated_commands
+
 from unitree_rl_lab.assets.robots.unitree import UNITREE_GO2_DIY_LEG_CFG as ROBOT_CFG
 from unitree_rl_lab.tasks.locomotion import mdp
 from unitree_rl_lab.tasks.locomotion.mdp.events import randomize_joint_position_targets
+from unitree_rl_lab.tasks.locomotion.mdp.commands.goal_position_command import GoalPositionCommandCfg
 from unitree_rl_lab.tasks.locomotion.robots.go2.velocity_env_cfg import (
     ActionsCfg as Go2ActionsCfg,
+    CommandsCfg as Go2CommandsCfg,
     CurriculumCfg as Go2CurriculumCfg,
     EventCfg as Go2EventCfg,
     ObservationsCfg as Go2ObservationsCfg,
@@ -68,6 +72,7 @@ class EventCfg(Go2EventCfg):
 
 _FEET_BODIES = [".*_foot", ".*diy_base_link"]
 _LEG_JOINTS_CFG = SceneEntityCfg("robot", joint_names=[".*_hip_joint", ".*_thigh_joint", ".*_calf_joint"])
+_DIY_JOINTS_CFG = SceneEntityCfg("robot", joint_names=[".*diy_joint.*"])
 
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import ObservationTermCfg as ObsTerm
@@ -86,6 +91,15 @@ class ObservationsCfg(Go2ObservationsCfg):
             func=mdp.joint_vel_rel, scale=0.05, clip=(-100, 100), noise=Unoise(n_min=-1.5, n_max=1.5),
             params={"asset_cfg": _LEG_JOINTS_CFG},
         )
+        # DIY joint observations
+        diy_joint_pos_rel = ObsTerm(
+            func=mdp.joint_pos_rel, clip=(-100, 100), noise=Unoise(n_min=-0.01, n_max=0.01),
+            params={"asset_cfg": _DIY_JOINTS_CFG},
+        )
+        diy_joint_vel_rel = ObsTerm(
+            func=mdp.joint_vel_rel, scale=0.05, clip=(-100, 100), noise=Unoise(n_min=-1.5, n_max=1.5),
+            params={"asset_cfg": _DIY_JOINTS_CFG},
+        )
 
     policy: PolicyCfg = PolicyCfg()
 
@@ -102,6 +116,15 @@ class ObservationsCfg(Go2ObservationsCfg):
         joint_effort = ObsTerm(
             func=mdp.joint_effort, scale=0.01, clip=(-100, 100),
             params={"asset_cfg": _LEG_JOINTS_CFG},
+        )
+        # DIY joint observations for critic
+        diy_joint_pos_rel = ObsTerm(
+            func=mdp.joint_pos_rel, clip=(-100, 100),
+            params={"asset_cfg": _DIY_JOINTS_CFG},
+        )
+        diy_joint_vel_rel = ObsTerm(
+            func=mdp.joint_vel_rel, scale=0.05, clip=(-100, 100),
+            params={"asset_cfg": _DIY_JOINTS_CFG},
         )
 
     critic: CriticCfg = CriticCfg()
@@ -183,10 +206,47 @@ class TerminationsCfg(Go2TerminationsCfg):
 
 @configclass
 class ActionsCfg(Go2ActionsCfg):
+    """Locomotion-only actions (diy joints held at default position)."""
+
     JointPositionAction = mdp.JointPositionActionCfg(
         asset_name="robot",
         joint_names=[".*_hip_joint", ".*_thigh_joint", ".*_calf_joint"],
         scale=0.25,
+        use_default_offset=True,
+        clip={".*": (-100.0, 100.0)},
+    )
+
+
+@configclass
+class ALaMActionsCfg(Go2ActionsCfg):
+    """ALaM dual-policy actions: locomotion legs + manipulation arms.
+
+    Action order: [12 leg joints, 8 diy joints] = 20 total.
+    The ALaMActorCritic network outputs loco actions (first 12) from the
+    locomotion actor and manip actions (last 8) from the manipulation actor.
+    """
+
+    # Locomotion: 12 leg joints (hip/thigh/calf × 4 legs)
+    JointPositionAction = mdp.JointPositionActionCfg(
+        asset_name="robot",
+        joint_names=[".*_hip_joint", ".*_thigh_joint", ".*_calf_joint"],
+        scale=0.25,
+        use_default_offset=True,
+        clip={".*": (-100.0, 100.0)},
+    )
+    # Manipulation: diy_joint1 (prismatic, 3cm/s) → velocity control
+    DiyJoint1VelocityAction = mdp.JointVelocityActionCfg(
+        asset_name="robot",
+        joint_names=[".*diy_joint1"],
+        scale=0.03,  # output ±1 → ±0.03 m/s (full speed)
+        use_default_offset=False,
+        clip={".*": (-1.0, 1.0)},
+    )
+    # Manipulation: diy_joint2-4 (revolute) → position control
+    DiyJointPositionAction = mdp.JointPositionActionCfg(
+        asset_name="robot",
+        joint_names=[".*diy_joint2", ".*diy_joint3", ".*diy_joint4"],
+        scale=0.5,
         use_default_offset=True,
         clip={".*": (-100.0, 100.0)},
     )
@@ -220,3 +280,146 @@ class RobotPlayEnvCfg(Go2RobotPlayEnvCfg):
     events: EventCfg = EventCfg()
     rewards: RewardsCfg = RewardsCfg()
     terminations: TerminationsCfg = TerminationsCfg()
+
+
+# ---------------------------------------------------------------------------
+# ALaM variants: 3-legged locomotion + 1 front leg manipulation
+# Reference: "Robust Pedipulation on Quadruped Robots via Gravitational-moment
+#             Minimization", Shin et al., IJCAS 2025
+# ---------------------------------------------------------------------------
+
+_EE_BODIES_CFG = SceneEntityCfg("robot", body_names=[".*diy_link4"])
+_FEET_BODIES_CFG = SceneEntityCfg("robot", body_names=_FEET_BODIES)
+
+
+@configclass
+class ALaMCommandsCfg(Go2CommandsCfg):
+    """Velocity + world-frame EE goal (proximity check + reachability map)."""
+
+    ee_goal = GoalPositionCommandCfg(
+        asset_name="robot",
+        resampling_time_range=(5.0, 10.0),
+        debug_vis=False,
+        # thigh(0.21) + diy_arm(0.48) ≈ 0.69m, use 80%
+        reachability_radius=0.55,
+        rel_manip_envs=0.3,
+        ranges=GoalPositionCommandCfg.Ranges(
+            pos_x=(0.1, 0.6),
+            pos_y=(-0.3, 0.3),
+            pos_z=(-0.2, 0.1),
+        ),
+    )
+
+
+@configclass
+class ALaMObservationsCfg(ObservationsCfg):
+    """Full ALaM observations: policy + command + privileged (paper Table 1)."""
+
+    # PolicyCfg: inherit base observations, no extra terms for now
+    # (foot_contact and foot_pos can be added after training stabilizes)
+
+    # Command: [G_d(3), G_B(3), leg_state(4)] = 10 dims
+    @configclass
+    class CommandCfg(ObsGroup):
+        ee_goal_commands = ObsTerm(
+            func=generated_commands, clip=(-100, 100),
+            params={"command_name": "ee_goal"},
+        )
+
+        def __post_init__(self):
+            self.enable_corruption = False
+            self.concatenate_terms = True
+
+    command: CommandCfg = CommandCfg()
+
+    # Privileged: CoF vel + CoM pos (domain rand can be added later)
+    @configclass
+    class PrivilegedCfg(ObsGroup):
+        cof_velocity = ObsTerm(
+            func=mdp.cof_velocity,
+            params={"feet_cfg": _FEET_BODIES_CFG},
+        )
+        com_pos_base = ObsTerm(func=mdp.com_pos_base)
+
+        def __post_init__(self):
+            self.enable_corruption = False
+            self.concatenate_terms = True
+
+    privileged: PrivilegedCfg = PrivilegedCfg()
+
+
+@configclass
+class ALaMRewardsCfg(RewardsCfg):
+    """Full ALaM rewards faithful to paper Tables 2 & 3."""
+
+    # ---- Balance (Table 2) ----
+    gravitational_moment = RewTerm(
+        func=mdp.gravitational_moment_reward, weight=1.0,
+        params={"feet_cfg": _FEET_BODIES_CFG, "sigma": 10.0},
+    )
+    feet_area = RewTerm(
+        func=mdp.locomotion_feet_area_reward, weight=0.5,
+        params={"feet_cfg": _FEET_BODIES_CFG, "sigma": 0.05},
+    )
+
+    # ---- Manipulation task (Table 3) ----
+    # Projected goal tracking G_B — curriculum: 0 → 8.0
+    ee_tracking = RewTerm(
+        func=mdp.ee_goal_tracking, weight=0.0,
+        params={"command_name": "ee_goal", "ee_cfg": _EE_BODIES_CFG, "sigma": 0.1},
+    )
+
+    # ---- Manipulation regularization ----
+    diy_joint_vel = RewTerm(
+        func=mdp.diy_joint_vel_penalty, weight=-1e-4,
+        params={"asset_cfg": _DIY_JOINTS_CFG},
+    )
+    diy_joint_acc = RewTerm(
+        func=mdp.diy_joint_acc_penalty, weight=-1e-9,
+        params={"asset_cfg": _DIY_JOINTS_CFG},
+    )
+    diy_action_rate = RewTerm(
+        func=mdp.diy_action_rate, weight=-0.005,
+        params={"loco_action_dim": 12},
+    )
+
+
+@configclass
+class ALaMCurriculumCfg(Go2CurriculumCfg):
+    """Curriculum: ramp ee_tracking + raw tracking + manip ratio."""
+
+    manip_tracking_levels = CurrTerm(
+        func=mdp.manipulation_reward_curriculum,
+        params={
+            "reward_term_name": "ee_tracking",
+            "max_weight": 8.0,
+            "step_size": 0.5,
+            "upgrade_interval": 2000,
+            "stability_term_name": "alive",
+            "stability_threshold": 0.3,
+            "command_name": "ee_goal",
+            "max_manip_ratio": 1.0,
+            "manip_ratio_step": 0.1,
+        },
+    )
+
+
+@configclass
+class ALaMRobotEnvCfg(RobotEnvCfg):
+    """ALaM training: 3-legged loco + 1 front leg manipulation."""
+
+    actions: ALaMActionsCfg = ALaMActionsCfg()
+    commands: ALaMCommandsCfg = ALaMCommandsCfg()
+    observations: ALaMObservationsCfg = ALaMObservationsCfg()
+    rewards: ALaMRewardsCfg = ALaMRewardsCfg()
+    curriculum: ALaMCurriculumCfg = ALaMCurriculumCfg()
+
+
+@configclass
+class ALaMRobotPlayEnvCfg(RobotPlayEnvCfg):
+    """ALaM play/eval config."""
+
+    actions: ALaMActionsCfg = ALaMActionsCfg()
+    commands: ALaMCommandsCfg = ALaMCommandsCfg()
+    observations: ALaMObservationsCfg = ALaMObservationsCfg()
+    rewards: ALaMRewardsCfg = ALaMRewardsCfg()

@@ -146,10 +146,13 @@ def main():
     else:
         normalizer = None
 
-    # export policy to onnx/jit
+    # export policy to onnx/jit (skip for custom architectures like ALaM)
     export_model_dir = os.path.join(os.path.dirname(resume_path), "exported")
-    export_policy_as_jit(policy_nn, normalizer=normalizer, path=export_model_dir, filename="policy.pt")
-    export_policy_as_onnx(policy_nn, normalizer=normalizer, path=export_model_dir, filename="policy.onnx")
+    try:
+        export_policy_as_jit(policy_nn, normalizer=normalizer, path=export_model_dir, filename="policy.pt")
+        export_policy_as_onnx(policy_nn, normalizer=normalizer, path=export_model_dir, filename="policy.onnx")
+    except ValueError as e:
+        print(f"[WARN] Skipping policy export: {e}")
 
     dt = env.unwrapped.step_dt
 

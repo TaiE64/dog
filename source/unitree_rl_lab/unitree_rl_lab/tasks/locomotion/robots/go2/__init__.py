@@ -10,3 +10,14 @@ gym.register(
         "rsl_rl_cfg_entry_point": f"unitree_rl_lab.tasks.locomotion.agents.rsl_rl_ppo_cfg:BasePPORunnerCfg",
     },
 )
+
+gym.register(
+    id="Unitree-Go2-ALaM",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.alam_env_cfg:ALaMRobotEnvCfg",
+        "play_env_cfg_entry_point": f"{__name__}.alam_env_cfg:ALaMRobotPlayEnvCfg",
+        "rsl_rl_cfg_entry_point": f"unitree_rl_lab.tasks.locomotion.agents.go2_alam_ppo_cfg:Go2ALaMPPORunnerCfg",
+    },
+)
