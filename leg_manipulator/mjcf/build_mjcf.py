@@ -274,9 +274,16 @@ def post_edit(mjcf_text: str) -> str:
     # at the new (floor) position. This is realistic grasping behavior.
     PLATFORM_TOP_Z = 0.05
     PLATFORM_HALF = (0.12, 0.15, 0.025)
+    # Robustness-tested workspace for FL arm + lower-jaw-scoop grasp:
+    #   y ∈ [+0.05, +0.20]  perpendicular bar approach, grasps reliably
+    #   y = 0.0             FL weak-side reach, marginal (Δz≈1.9cm)
+    #   y < 0.0             body yaws too far right; gripper approaches the
+    #                       bar at an angle, lower jaw slides along bar
+    #                       instead of scooping under → fails to clamp
+    # Default y=0.05 stays in the reliable zone with a slight curved walk.
     platform = ET.Element("body", {
         "name": "target_platform",
-        "pos": f"1.0 0.2 {PLATFORM_HALF[2]:.3f}",  # center z = half-height (sits on floor)
+        "pos": f"1.0 0.05 {PLATFORM_HALF[2]:.3f}",
     })
     ET.SubElement(platform, "geom", {
         "name": "platform_geom",
@@ -293,12 +300,7 @@ def post_edit(mjcf_text: str) -> str:
     DUMBBELL_REST_Z = PLATFORM_TOP_Z + 0.04  # platform top + box half-height (8cm cubes)
     cube = ET.Element("body", {
         "name": "target_cube",
-        # Spawned at x=0.92 instead of 1.0 — closer to the dog so the bar
-        # sits at the dog's natural arm reach (without forcing a tight
-        # body-arm coordination at the workspace edge). Platform x range is
-        # [0.88, 1.12]; with plate half-width 4cm, the dumbbell stays fully
-        # on the platform at x≥0.92.
-        "pos": f"0.92 0.2 {DUMBBELL_REST_Z:.3f}",
+        "pos": f"0.92 0.05 {DUMBBELL_REST_Z:.3f}",
     })
     ET.SubElement(cube, "freejoint", {"name": "target_cube_free"})
     # Handle: thin cylinder along Y axis (so dumbbell's long axis is Y in
@@ -425,7 +427,7 @@ def fill_keyframe(mjcf_text: str) -> str:
         cube_adr = model.jnt_qposadr[cube_jid]
         # Dumbbell rests on 5cm-top platform; with 8cm box-height ends,
         # cube body center at z = 0.05 + 0.04 = 0.09
-        qpos[cube_adr:cube_adr + 7] = [0.92, 0.2, 0.09, 1.0, 0.0, 0.0, 0.0]
+        qpos[cube_adr:cube_adr + 7] = [0.92, 0.05, 0.09, 1.0, 0.0, 0.0, 0.0]
 
     # ctrl vector matches actuator order
     ctrl = [0.0] * model.nu

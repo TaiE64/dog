@@ -81,7 +81,11 @@ FL_DIY_JOINT_NAMES = ["FL_diy_joint1", "FL_diy_joint2", "FL_diy_joint3", "FL_diy
 FR_DIY_JOINT_NAMES = ["diy_joint1", "diy_joint2", "diy_joint3", "diy_joint4"]
 # Tucked / leg-like hold pose for the DIY arm during walk + the 1-3 default
 # position when not actively reaching. joint4 is the gripper, treated separately.
-FL_DIY_HOLD_123 = np.array([0.0, 0.0, 0.0], dtype=np.float32)
+# Walking hold pose: joint2=-0.3 lifts the arm tip slightly above horizontal
+# so the gripper doesn't drag along the scene while walking. Stays close to
+# the typical reach pose (joint2 ≈ -0.4) so the EXTEND→REACH sweep is small
+# and doesn't bonk the bar. Joints 1, 3 stay at 0.
+FL_DIY_HOLD_123 = np.array([0.0, -0.3, 0.0], dtype=np.float32)
 J4_OPEN = 2.0    # gripper open (joint4 range [0.2, 2.3], 2.3 is upper limit)
 J4_CLOSE = 0.5   # gripper closed/grasping
 
@@ -103,7 +107,7 @@ REACH_BLEND_S       = 0.8    # s — IK ramp during REACH
 # Vision-loss handling
 VISION_LOST_TIMEOUT = 1.5    # s — APPROACH watchdog (cube in field-of-view loss)
 VISION_GIVE_UP      = 5.0    # s — global timeout for any active phase
-SEARCH_YAW_RATE     = 0.4    # rad/s — initial-search rotation (no goal ever seen)
+SEARCH_YAW_RATE     = 0.4    # rad/s — initial-search rotation
 REACQUIRE_BACK_VX   = -0.25  # m/s — backward speed when reacquiring (cube was
                               # cached but is currently out of FOV → most likely
                               # we're just too close, backing up brings it back
@@ -112,7 +116,26 @@ REACQUIRE_TIMEOUT_S = 4.0    # s — if can't reacquire by then, fall through to
                               # SEARCH (rotate scan)
 
 EXTEND_RAMP_S       = 1.0    # s — smooth blend HOLD→REACH_POSE
-SERVO_TOL_M         = 0.06   # m — EE→cube ≤ this counts as "covered" → CLOSE
+# Bar long axis in world (current MJCF: dumbbell handle along world Y).
+# Used by PRE_ALIGN to position the body perpendicular to the bar so the
+# gripper's closing direction lines up with the bar's narrow axis. Could be
+# derived per-frame from vision (bar bbox direction → world via cam_R) for
+# generality; hardcoded for now to match the demo MJCF.
+BAR_AXIS_XY        = np.array([0.0, 1.0])
+APPROACH_PERP_DIST = 0.40   # m — body→cube distance during PRE_ALIGN/SERVO
+PRE_ALIGN_YAW_TOL  = 0.15   # rad ≈ 8.6° — close enough to perpendicular
+                              # yaw. Walk policy can't yaw precisely when
+                              # standing still (no forward motion to anchor),
+                              # so 0.08 (≈5°) was unreachable in practice.
+PRE_ALIGN_XY_TOL   = 0.08   # m — close enough to approach_xy
+PRE_ALIGN_TIMEOUT  = 8.0    # s — give up and try EXTEND anyway
+
+SERVO_TOL_M         = 0.05   # m — EE→cube ≤ this counts as "covered" → CLOSE.
+                              # 0.06 was too lenient (gripper closed 6cm short
+                              # of bar at off-axis); 0.03 was too strict (body
+                              # crept past optimal stance, dropped grasp
+                              # tightness at baseline). 0.05 keeps baseline
+                              # working + extends usable y range.
 SERVO_SAFE_DIST     = 0.40   # m — body→cube target distance during SERVO.
                               # With EE_TIP_LOCAL pushing the tracked point
                               # ~5cm forward of link4 origin, the tip can
@@ -139,12 +162,8 @@ CLOSE_HOLD_S        = 0.6
 LIFT_HEIGHT_M       = 0.06   # m — raise arm this much above grasp z
 LIFT_RAMP_S         = 0.6    # s — time to ramp arm to lifted pose
 LIFT_HOLD_S         = 0.6    # s — hold lifted, then read cube z
-LIFT_DETECT_M       = 0.020  # m — cube must rise at least this much to count.
-                              # Threshold relaxed from 0.025 to 0.020 because
-                              # the geometry sweet spot lands at ~2cm rise; a
-                              # 2cm cube lift during a 6cm arm raise is
-                              # unambiguous grasp evidence (gravity alone
-                              # never lifts the cube).
+LIFT_DETECT_M       = 0.020  # m — cube must rise at least 2cm during the
+                              # 6cm arm raise to count as a real grasp.
 RETRY_BACKUP_S      = 1.0    # s — back up between retries (longer = more
                               # visible "trying again", and base is reset to
                               # a different pose for the next SERVO attempt)
@@ -581,6 +600,9 @@ class GraspController:
         self._last_ik_err = float("nan")
         self._ik_feasible = False
         self._cached_data = None  # latest mjData, exposed to _set_servo_command
+        # PRE_ALIGN scratch — overwritten each APPROACH/PRE_ALIGN tick.
+        self._approach_xy = np.zeros(2, dtype=np.float32)
+        self._approach_yaw = 0.0
         # Lift-test verification state
         self._lift_cube_z_start = 0.0
         self._lift_reach_pose = self._reach_pose.copy()
@@ -634,6 +656,31 @@ class GraspController:
         return reach_pose.astype(np.float32), ee_body.astype(np.float32)
 
     # --- helpers ----
+    def _compute_approach_pose(self, goal_world, base_pos):
+        """Pose to settle into BEFORE final reach. Body forward is
+        perpendicular to the bar's long axis (so gripper closes across the
+        bar's narrow direction, not along its length), and body sits at
+        APPROACH_PERP_DIST on whichever side of the bar is closer to the
+        robot's current position. Yaw includes the arm-bias correction so
+        the FL arm's natural left-offset aligns with the bar.
+
+        Returns (approach_xy, target_yaw, perp_dir).
+        """
+        bar_axis = BAR_AXIS_XY / max(float(np.linalg.norm(BAR_AXIS_XY)), 1e-9)
+        # Two perpendicular directions in xy plane (unit vectors)
+        perp_a = np.array([-bar_axis[1], bar_axis[0]])
+        perp_b = -perp_a
+        to_robot = base_pos[:2] - goal_world[:2]
+        # Pick the perp pointing from cube TOWARD robot — that's the side
+        # we'll approach from (closest, no need to go around the bar).
+        perp = perp_a if float(np.dot(to_robot, perp_a)) > float(np.dot(to_robot, perp_b)) else perp_b
+        approach_xy = goal_world[:2] + perp * APPROACH_PERP_DIST
+        # Body forward = -perp (points from approach pos toward cube)
+        forward_yaw = float(np.arctan2(-perp[1], -perp[0]))
+        ee_lat_angle = float(np.arctan2(self._ee_offset_body[1], self._ee_offset_body[0]))
+        target_yaw = forward_yaw - ee_lat_angle
+        return approach_xy.astype(np.float32), float(target_yaw), perp.astype(np.float32)
+
     def _ee_tip_world(self, data):
         """World position of the gripper TIP (between the two jaws), not
         link4's body origin. Used for SERVO/IK distance checks so we land
@@ -703,11 +750,19 @@ class GraspController:
         yaw_err = (target_yaw - base_yaw + np.pi) % (2 * np.pi) - np.pi
         self.cmd_vel[2] = float(np.clip(yaw_err * 1.5, -SERVO_MAX_WZ, SERVO_MAX_WZ))
 
-        # 5. Forward: drive signed forward error to zero. Floor magnitude to
-        # SERVO_MIN_VX (walk policy deadband) only when error is large enough
-        # that we actually want motion; otherwise let it decay to 0 so body
-        # really stops and arm IK finishes the last cm.
-        if abs(body_forward_err) > 0.04:
+        # 5. Forward: keep walking forward as long as IK can't actually reach
+        # the cube. The "ideal_body" position assumes the arm will hit
+        # workspace exactly — but at off-axis positions the IK plateaus 5+cm
+        # short, so body needs to creep CLOSER than ideal_body to close that
+        # gap. Stop only when ik_err is genuinely small (arm physically
+        # reaching the bar, not just at the static-reach-pose distance).
+        ik_err = float(self._last_ik_err) if not np.isnan(self._last_ik_err) else 1.0
+        if ik_err > SERVO_TOL_M:
+            # IK can't reach cube yet → press body forward (regardless of
+            # body_forward_err sign — we want body closer to cube).
+            self.cmd_vel[0] = SERVO_MIN_VX
+        elif abs(body_forward_err) > 0.04:
+            # IK reaches cube; fine-position body to ideal_body.
             sign = 1.0 if body_forward_err > 0 else -1.0
             v = sign * max(SERVO_MIN_VX, SERVO_KP * abs(body_forward_err))
             self.cmd_vel[0] = float(np.clip(v, -SERVO_MAX_VX, SERVO_MAX_VX))
@@ -833,11 +888,16 @@ class GraspController:
         # at close range cube falling out of head_cam FOV is expected — the
         # cached goal_world is still correct.
         prev_phase = self.phase
-        # Vision-loss watchdog — ONLY in APPROACH (far-range walking, where
-        # losing sight means object actually moved or got lost). SERVO is
-        # close-range and the cube going below FOV is expected — let SERVO's
-        # own timeout decide when to give up.
-        if self.phase == "APPROACH" and vision_age > VISION_LOST_TIMEOUT:
+        # Vision-loss watchdog: only fires BEFORE the goal is locked (still
+        # accumulating samples). Once LOCKED we trust the cached world goal
+        # and don't care if the camera momentarily loses the cube — APPROACH
+        # walks toward an approach_xy that may take the cube outside FOV
+        # (e.g. for off-axis cubes the body yaws sharply and the camera
+        # stops pointing at the cube). Re-locking from those partial views
+        # would corrupt the goal anyway (already filtered out elsewhere).
+        if (self.phase == "APPROACH"
+                and not self._goal_locked
+                and vision_age > VISION_LOST_TIMEOUT):
             print(f"[vision lost in APPROACH] backing up to reacquire (vision_age={vision_age:.1f}s)")
             self.phase, self.phase_t = "REACQUIRE", 0.0
 
@@ -862,16 +922,33 @@ class GraspController:
             if self.phase == "SEARCH":
                 self.phase, self.phase_t = "APPROACH", 0.0
             elif self.phase == "APPROACH":
-                d_base_to_goal = float(np.linalg.norm(self.goal_world[:2] - base_pos[:2]))
-                if d_base_to_goal < 0.55:
-                    # Recompute reach pose at LIVE base pose (accounts for
-                    # body sag), targeting the detected object height.
+                # Walk toward approach_xy (bar-perpendicular standoff). Then
+                # PRE_ALIGN to fix yaw to bar-perpendicular before EXTEND.
+                approach_xy, _, _ = self._compute_approach_pose(self.goal_world, base_pos)
+                self._approach_xy = approach_xy
+                d_to_approach = float(np.linalg.norm(approach_xy - base_pos[:2]))
+                if d_to_approach < PRE_ALIGN_XY_TOL:
+                    self.phase, self.phase_t = "PRE_ALIGN", 0.0
+            elif self.phase == "PRE_ALIGN":
+                # At approach_xy, rotate body to target_yaw (bar-perpendicular).
+                _, target_yaw, _ = self._compute_approach_pose(self.goal_world, base_pos)
+                self._approach_yaw = target_yaw
+                yaw_err = abs((target_yaw - base_yaw + np.pi) % (2 * np.pi) - np.pi)
+                if yaw_err < PRE_ALIGN_YAW_TOL:
+                    # Now compute reach pose at this LIVE perpendicular pose.
                     self._reach_pose, self._ee_offset_body = self._compute_reach_pose(
                         self._model, target_world_z=float(self.goal_world[2]),
                         live_data=data,
                     )
                     print(f"  reach pose for target z={self.goal_world[2]:.3f}: "
                           f"j={self._reach_pose.round(3)}, ee_body={self._ee_offset_body.round(3)}")
+                    self.phase, self.phase_t = "EXTEND", 0.0
+                elif self.phase_t > PRE_ALIGN_TIMEOUT:
+                    print(f"[PRE_ALIGN] timed out, yaw_err={yaw_err:.2f}rad → EXTEND anyway")
+                    self._reach_pose, self._ee_offset_body = self._compute_reach_pose(
+                        self._model, target_world_z=float(self.goal_world[2]),
+                        live_data=data,
+                    )
                     self.phase, self.phase_t = "EXTEND", 0.0
             elif self.phase == "EXTEND":
                 # Arm ramps from HOLD → REACH_POSE; gripper opens.
@@ -980,9 +1057,9 @@ class GraspController:
             self.cmd_vel[1] = float(sign * RETRY_SIDE_STEP)
             self.cmd_vel[2] = 0.0
         elif self.phase == "APPROACH" and self.goal_world is not None:
-            # Coarse walk toward cube xy
-            dx = float(self.goal_world[0] - base_pos[0])
-            dy = float(self.goal_world[1] - base_pos[1])
+            # Walk toward approach_xy with yaw + forward + small lateral.
+            dx = float(self._approach_xy[0] - base_pos[0])
+            dy = float(self._approach_xy[1] - base_pos[1])
             c, s = np.cos(-base_yaw), np.sin(-base_yaw)
             body_x = c * dx - s * dy
             body_y = s * dx + c * dy
@@ -990,9 +1067,15 @@ class GraspController:
             speed = float(np.clip(0.6 * norm, 0.20, 0.5))
             self.cmd_vel[0] = float(speed * body_x / norm)
             self.cmd_vel[1] = float(speed * body_y / norm) * 0.3
-            yaw_to_goal = np.arctan2(dy, dx)
-            yaw_err = (yaw_to_goal - base_yaw + np.pi) % (2 * np.pi) - np.pi
+            yaw_to_target = np.arctan2(dy, dx)
+            yaw_err = (yaw_to_target - base_yaw + np.pi) % (2 * np.pi) - np.pi
             self.cmd_vel[2] = float(np.clip(yaw_err * 1.5, -1.0, 1.0))
+        elif self.phase == "PRE_ALIGN" and self.goal_world is not None:
+            # At approach_xy — rotate yaw to perpendicular target. No forward.
+            yaw_err = (self._approach_yaw - base_yaw + np.pi) % (2 * np.pi) - np.pi
+            self.cmd_vel[0] = 0.0
+            self.cmd_vel[1] = 0.0
+            self.cmd_vel[2] = float(np.clip(yaw_err * 1.5, -SERVO_MAX_WZ, SERVO_MAX_WZ))
         elif self.phase == "SERVO" and self.goal_world is not None:
             # cmd_vel is driven by IK residual inside _set_servo_command:
             # walks forward only while arm can't reach, freezes once it can.
@@ -1024,7 +1107,7 @@ class GraspController:
         # REACH_POSE; LIFT_TEST: ramp REACH_POSE → LIFT_REACH_POSE so the arm
         # rises while gripper stays closed (active grasp test).
         fl_diy_targets = np.empty(4, dtype=np.float32)
-        if self.phase in ("SEARCH", "APPROACH", "REACQUIRE"):
+        if self.phase in ("SEARCH", "APPROACH", "PRE_ALIGN", "REACQUIRE"):
             fl_diy_targets[:3] = FL_DIY_HOLD_123
         elif self.phase == "EXTEND":
             a = float(np.clip(self.phase_t / EXTEND_RAMP_S, 0.0, 1.0))
