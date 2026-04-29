@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version='1.0' encoding='utf-8'?>
 <!-- Go2 机器狗 + DIY 机械腿 合并 URDF -->
 <!-- 前右腿 (FR) 的小腿部分被替换为 DIY leg_manipulator -->
 <!-- 前右腿的大腿 (FR_hip + FR_thigh) 保留不变 -->
@@ -14,7 +14,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://leg_manipulator/go2_description/dae/base.dae" />
+        <mesh filename="package://go2_description/dae/base.dae" />
       </geometry>
       <material name="深色橡胶_001-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="白色logo_001-effect"><color rgba="1 1 1 1" /></material><material name="黑色贴纸_007-effect"><color rgba="0.009018 0.009018 0.009018 1" /></material><material name="黑色金属_007-effect"><color rgba="0.01341 0.01341 0.01341 1" /></material><material name="黑色塑料_003-effect"><color rgba="0.023455 0.023455 0.023455 1" /></material></visual>
     <collision>
@@ -75,7 +75,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://leg_manipulator/go2_description/dae/hip.dae" />
+        <mesh filename="package://go2_description/dae/hip.dae" />
       </geometry>
       <material name="深色橡胶_001-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
     <collision>
@@ -90,7 +90,6 @@
     <parent link="base" />
     <child link="FL_hip" />
     <axis xyz="1 0 0" />
-    <dynamics damping="0.5" friction="0.01"/>
     <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
   </joint>
   <link name="FL_hip_rotor">
@@ -114,7 +113,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://leg_manipulator/go2_description/dae/thigh.dae" />
+        <mesh filename="package://go2_description/dae/thigh.dae" />
       </geometry>
       <material name="深色橡胶_003-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material_009-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
     <collision>
@@ -129,7 +128,6 @@
     <parent link="FL_hip" />
     <child link="FL_thigh" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0.5" friction="0.01"/>
     <limit lower="-1.5708" upper="3.4907" effort="23.7" velocity="30.1" />
   </joint>
   <link name="FL_thigh_rotor">
@@ -147,20 +145,19 @@
   <!-- ============================================================ -->
   <!-- ======= DIY 机械腿 (替换 FL 小腿部分) ====================== -->
   <joint name="FL_calf_joint" type="revolute">
-    <origin xyz="0 -0.002 -0.212" rpy="0 -1.5708 0" />
+    <origin xyz="0 -0.002 -0.212" rpy="1.5708 1.5708 0" />
     <parent link="FL_thigh" />
     <child link="FL_diy_base_link" />
-    <axis xyz="0 1 0" />
-    <dynamics damping="0.5" friction="0.01"/>
-    <limit lower="-2.9" upper="-1.2" effort="45.43" velocity="15.70" />
+    <axis xyz="0 0 1" />
+    <limit lower="0.99" upper="2.82" effort="45.43" velocity="15.70" />
   </joint>
 
   <link name="FL_diy_base_link">
     <inertial>
-      <origin xyz="-0.102101858263051 -1.23372200670387E-05 0.0495364959218269" rpy="0 0 0" />
-      <mass value="0.228916745240302" />
-      <inertia ixx="7.32933157890681E-05" ixy="-1.48577654516967E-07" ixz="7.21766471076414E-05"
-               iyy="0.00061322332790674" iyz="2.15302205976865E-08" izz="0.000602631444620784" />
+      <origin xyz="0.0943168928059743 -0.0378877518085321 1.09283036485832E-07" rpy="0 0 0" />
+      <mass value="0.209323724052629" />
+      <inertia ixx="7.2679456940261E-05" ixy="6.56560041754511E-05" ixz="-1.29122895635377E-09"
+               iyy="0.000739432838346249" iyz="1.81208805579471E-10" izz="0.000751999020004439" />
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -181,10 +178,10 @@
 
   <link name="FL_diy_link1">
     <inertial>
-      <origin xyz="-0.128815170246768 6.16693158052885E-05 0.0174844738870931" rpy="0 0 0" />
-      <mass value="0.0589546671844344" />
-      <inertia ixx="1.17826464867624E-05" ixy="1.13571487128267E-07" ixz="-7.96530718981461E-07"
-               iyy="1.49514869427638E-05" iyz="-3.89603257061317E-08" izz="1.35226508650578E-05" />
+      <origin xyz="0.129920812601201 0.0176941905296979 6.16693340975751E-05" rpy="0 0 0" />
+      <mass value="0.0589546671873471" />
+      <inertia ixx="1.17806908514909E-05" ixy="7.9438942953724E-07" ixz="-1.13523457072165E-07"
+               iyy="1.35246063176518E-05" iyz="-3.90998920714599E-08" izz="1.49514868227742E-05" />
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -202,21 +199,20 @@
       </geometry>
     </collision>
   </link>
-  <joint name="FL_diy_joint1" type="prismatic">
-    <origin xyz="-0.022741 -5E-05 0.032" rpy="3.1416 0 0" />
+  <joint name="FL_diy_joint1" type="fixed">
+    <origin xyz="0.022502 -0.034022 0" rpy="0 0 0" />
     <parent link="FL_diy_base_link" />
     <child link="FL_diy_link1" />
-    <axis xyz="1 0 0" />
-    <dynamics damping="10.0" friction="5.0"/>
-    <limit lower="0" upper="0.1" effort="40" velocity="0.01" />
+    <axis xyz="-1 -0.0012292 0" />
+    <limit lower="0" upper="0.105" effort="100" velocity="1" />
   </joint>
 
   <link name="FL_diy_link2">
     <inertial>
-      <origin xyz="-0.0412400600572213 0.0290000049963766 -0.00237297655194358" rpy="0 0 0" />
-      <mass value="0.0492722298663148" />
-      <inertia ixx="1.6171917803228E-05" ixy="-1.43810043193834E-13" ixz="-2.73606234561682E-07"
-               iyy="1.49982082029405E-05" iyz="1.18466833635428E-13" izz="2.51424133329096E-05" />
+      <origin xyz="0.040605 0.0074292 0.029" rpy="0 0 0" />
+      <mass value="0.049272" />
+      <inertia ixx="1.6548E-05" ixy="-1.8192E-06" ixz="-1.607E-13"
+               iyy="2.4766E-05" iyz="-9.1942E-14" izz="1.4998E-05" />
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -234,21 +230,20 @@
       </geometry>
     </collision>
   </link>
-  <joint name="FL_diy_joint2" type="revolute">
-    <origin xyz="-0.145982705510586 -0.0292000000000024 0.0227" rpy="0 0 0" />
+  <joint name="FL_diy_joint2" type="fixed">
+    <origin xyz="0.14708 0.022931 -0.0291" rpy="0 0 0" />
     <parent link="FL_diy_link1" />
     <child link="FL_diy_link2" />
-    <axis xyz="0 -1 0" />
-    <dynamics damping="0.62" friction="0.3"/>
-    <limit lower="-2.4" upper="0.67" effort="4.9" velocity="7.85" />
+    <axis xyz="0 0 -1" />
+    <limit lower="-2.2" upper="0.08" effort="100" velocity="1" />
   </joint>
 
   <link name="FL_diy_link3">
     <inertial>
-      <origin xyz="-0.0875706443775528 0.0012980092080234 0.0260546304711824" rpy="0 0 0" />
-      <mass value="0.111402715752738" />
-      <inertia ixx="4.56339135238866E-05" ixy="1.77867913646447E-06" ixz="5.58509130634157E-05"
-               iyy="0.000168660813444487" iyz="-8.191426226183E-07" izz="0.000137997912896648" />
+      <origin xyz="0.0663377503948778 0.0361308835454836 -0.00488817433050899" rpy="0 0 0" />
+      <mass value="0.0862103337643177" />
+      <inertia ixx="4.49024829156816E-05" ixy="-3.8955468860886E-05" ixz="4.33352189711834E-06"
+               iyy="6.46603782644134E-05" iyz="3.40839998380423E-06" izz="9.77807895059655E-05" />
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -266,21 +261,20 @@
       </geometry>
     </collision>
   </link>
-  <joint name="FL_diy_joint3" type="revolute">
-    <origin xyz="-0.050675 0.029 0.017145" rpy="0 0 0" />
+  <joint name="FL_diy_joint3" type="fixed">
+    <origin xyz="0.045837 0.027894 0.029" rpy="0 0 0" />
     <parent link="FL_diy_link2" />
     <child link="FL_diy_link3" />
-    <axis xyz="0.46021 0 0.88781" />
-    <dynamics damping="0.13" friction="0.1"/>
-    <limit lower="-1.42" upper="1.45" effort="1.39" velocity="10.47" />
+    <axis xyz="-0.6572 0.75372 0" />
+    <limit lower="-1.2" upper="1.2" effort="100" velocity="1" />
   </joint>
 
   <link name="FL_diy_link4">
     <inertial>
-      <origin xyz="-0.0320231399899398 0.0188395340678356 0.0196130289979088" rpy="0 0 0" />
-      <mass value="0.0268787641612815" />
-      <inertia ixx="2.60267203023457E-06" ixy="1.49718719392197E-07" ixz="2.82922055894807E-06"
-               iyy="1.15913002533176E-05" iyz="-4.94293134081021E-08" izz="1.03912131946971E-05" />
+      <origin xyz="0.0360357170979314 0.0162093569051752 0.0156288374211208" rpy="0 0 0" />
+      <mass value="0.026431100728336" />
+      <inertia ixx="2.00577806117396E-06" ixy="-1.68101464286757E-06" ixz="5.29667968557728E-07"
+               iyy="1.09980691812644E-05" iyz="1.04901743658363E-07" izz="1.15473383556095E-05" />
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -298,13 +292,40 @@
       </geometry>
     </collision>
   </link>
-  <joint name="FL_diy_joint4" type="revolute">
-    <origin xyz="-0.12194 -0.015927 0.044362" rpy="0 0 0" />
+  <joint name="FL_diy_joint4" type="fixed">
+    <origin xyz="0.083867 0.052256 -0.024248" rpy="0 0 0" />
     <parent link="FL_diy_link3" />
     <child link="FL_diy_link4" />
-    <axis xyz="0.014315 0.99987 -0.0074203" />
-    <dynamics damping="0.13" friction="0.1"/>
-    <limit lower="-0.17" upper="1.4" effort="1.39" velocity="10.47" />
+    <axis xyz="0.047892 0.041759 0.99798" />
+    <limit lower="0.2" upper="2.3" effort="100" velocity="1" />
+  </joint>
+
+  <!-- FL DIY 足端 (sphere tip as separate contact body) -->
+  <link name="FL_diy_foot">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.04" />
+      <inertia ixx="9.6e-06" ixy="0" ixz="0" iyy="9.6e-06" iyz="0" izz="9.6e-06" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://go2_description/dae/foot.dae" scale="1.3 1.3 1.3" />
+      </geometry>
+      <material name="黑色足端_005-effect"><color rgba="0 0 0 1" /></material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://go2_description/dae/foot.dae" scale="1.3 1.3 1.3" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="FL_diy_foot_joint" type="fixed" dont_collapse="true">
+    <origin xyz="0.196 -0.045 0.0" rpy="1.5708 0 3.35" />
+    <parent link="FL_diy_base_link" />
+    <child link="FL_diy_foot" />
+    <axis xyz="0 0 0" />
   </joint>
 
   <!-- ==================== 前右腿 FR — 大腿保留，小腿换成 DIY ==================== -->
@@ -318,7 +339,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="3.1415 0 0" />
       <geometry>
-        <mesh filename="package://leg_manipulator/go2_description/dae/hip.dae" />
+        <mesh filename="package://go2_description/dae/hip.dae" />
       </geometry>
       <material name="深色橡胶_001-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
     <collision>
@@ -333,7 +354,6 @@
     <parent link="base" />
     <child link="FR_hip" />
     <axis xyz="1 0 0" />
-    <dynamics damping="0.5" friction="0.01"/>
     <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
   </joint>
   <link name="FR_hip_rotor">
@@ -357,7 +377,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://leg_manipulator/go2_description/dae/thigh_mirror.dae" />
+        <mesh filename="package://go2_description/dae/thigh_mirror.dae" />
       </geometry>
       <material name="深色橡胶_012-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material_011-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
     <collision>
@@ -372,7 +392,6 @@
     <parent link="FR_hip" />
     <child link="FR_thigh" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0.5" friction="0.01"/>
     <limit lower="-1.5708" upper="3.4907" effort="23.7" velocity="30.1" />
   </joint>
   <link name="FR_thigh_rotor">
@@ -395,20 +414,19 @@
   <!-- 原 FR_calf_joint: origin xyz="0 0 -0.213" (大腿底端) -->
 
   <joint name="FR_calf_joint" type="revolute">
-    <origin xyz="0 0.002 -0.212" rpy="0 -1.5708 0" />
+    <origin xyz="0 0.002 -0.212" rpy="1.5708 1.5708 0" />
     <parent link="FR_thigh" />
     <child link="diy_base_link" />
-    <axis xyz="0 1 0" />
-    <dynamics damping="0.5" friction="0.01"/>
-    <limit lower="-2.9" upper="-1.2" effort="45.43" velocity="15.70" />
+    <axis xyz="0 0 1" />
+    <limit lower="0.99" upper="2.82" effort="45.43" velocity="15.70" />
   </joint>
 
   <link name="diy_base_link">
     <inertial>
-      <origin xyz="-0.102101858263051 -1.23372200670387E-05 0.0495364959218269" rpy="0 0 0" />
-      <mass value="0.228916745240302" />
-      <inertia ixx="7.32933157890681E-05" ixy="-1.48577654516967E-07" ixz="7.21766471076414E-05"
-               iyy="0.00061322332790674" iyz="2.15302205976865E-08" izz="0.000602631444620784" />
+      <origin xyz="0.0943168928059743 -0.0378877518085321 1.09283036485832E-07" rpy="0 0 0" />
+      <mass value="0.209323724052629" />
+      <inertia ixx="7.2679456940261E-05" ixy="6.56560041754511E-05" ixz="-1.29122895635377E-09"
+               iyy="0.000739432838346249" iyz="1.81208805579471E-10" izz="0.000751999020004439" />
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -429,10 +447,10 @@
 
   <link name="diy_link1">
     <inertial>
-      <origin xyz="-0.128815170246768 6.16693158052885E-05 0.0174844738870931" rpy="0 0 0" />
-      <mass value="0.0589546671844344" />
-      <inertia ixx="1.17826464867624E-05" ixy="1.13571487128267E-07" ixz="-7.96530718981461E-07"
-               iyy="1.49514869427638E-05" iyz="-3.89603257061317E-08" izz="1.35226508650578E-05" />
+      <origin xyz="0.129920812601201 0.0176941905296979 6.16693340975751E-05" rpy="0 0 0" />
+      <mass value="0.0589546671873471" />
+      <inertia ixx="1.17806908514909E-05" ixy="7.9438942953724E-07" ixz="-1.13523457072165E-07"
+               iyy="1.35246063176518E-05" iyz="-3.90998920714599E-08" izz="1.49514868227742E-05" />
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -450,21 +468,20 @@
       </geometry>
     </collision>
   </link>
-  <joint name="diy_joint1" type="prismatic">
-    <origin xyz="-0.022741 -5E-05 0.032" rpy="3.1416 0 0" />
+  <joint name="diy_joint1" type="fixed">
+    <origin xyz="0.022502 -0.034022 0" rpy="0 0 0" />
     <parent link="diy_base_link" />
     <child link="diy_link1" />
-    <axis xyz="1 0 0" />
-    <dynamics damping="10.0" friction="5.0"/>
-    <limit lower="0" upper="0.1" effort="40" velocity="0.01" />
+    <axis xyz="-1 -0.0012292 0" />
+    <limit lower="0" upper="0.105" effort="100" velocity="1" />
   </joint>
 
   <link name="diy_link2">
     <inertial>
-      <origin xyz="-0.0412400600572213 0.0290000049963766 -0.00237297655194358" rpy="0 0 0" />
-      <mass value="0.0492722298663148" />
-      <inertia ixx="1.6171917803228E-05" ixy="-1.43810043193834E-13" ixz="-2.73606234561682E-07"
-               iyy="1.49982082029405E-05" iyz="1.18466833635428E-13" izz="2.51424133329096E-05" />
+      <origin xyz="0.040605 0.0074292 0.029" rpy="0 0 0" />
+      <mass value="0.049272" />
+      <inertia ixx="1.6548E-05" ixy="-1.8192E-06" ixz="-1.607E-13"
+               iyy="2.4766E-05" iyz="-9.1942E-14" izz="1.4998E-05" />
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -482,21 +499,20 @@
       </geometry>
     </collision>
   </link>
-  <joint name="diy_joint2" type="revolute">
-    <origin xyz="-0.145982705510586 -0.0292000000000024 0.0227" rpy="0 0 0" />
+  <joint name="diy_joint2" type="fixed">
+    <origin xyz="0.14708 0.022931 -0.0291" rpy="0 0 0" />
     <parent link="diy_link1" />
     <child link="diy_link2" />
-    <axis xyz="0 -1 0" />
-    <dynamics damping="0.62" friction="0.3"/>
-    <limit lower="-2.4" upper="0.67" effort="4.9" velocity="7.85" />
+    <axis xyz="0 0 -1" />
+    <limit lower="-2.2" upper="0.08" effort="100" velocity="1" />
   </joint>
 
   <link name="diy_link3">
     <inertial>
-      <origin xyz="-0.0875706443775528 0.0012980092080234 0.0260546304711824" rpy="0 0 0" />
-      <mass value="0.111402715752738" />
-      <inertia ixx="4.56339135238866E-05" ixy="1.77867913646447E-06" ixz="5.58509130634157E-05"
-               iyy="0.000168660813444487" iyz="-8.191426226183E-07" izz="0.000137997912896648" />
+      <origin xyz="0.0663377503948778 0.0361308835454836 -0.00488817433050899" rpy="0 0 0" />
+      <mass value="0.0862103337643177" />
+      <inertia ixx="4.49024829156816E-05" ixy="-3.8955468860886E-05" ixz="4.33352189711834E-06"
+               iyy="6.46603782644134E-05" iyz="3.40839998380423E-06" izz="9.77807895059655E-05" />
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -514,21 +530,20 @@
       </geometry>
     </collision>
   </link>
-  <joint name="diy_joint3" type="revolute">
-    <origin xyz="-0.050675 0.029 0.017145" rpy="0 0 0" />
+  <joint name="diy_joint3" type="fixed">
+    <origin xyz="0.045837 0.027894 0.029" rpy="0 0 0" />
     <parent link="diy_link2" />
     <child link="diy_link3" />
-    <axis xyz="0.46021 0 0.88781" />
-    <dynamics damping="0.13" friction="0.1"/>
-    <limit lower="-1.42" upper="1.45" effort="1.39" velocity="10.47" />
+    <axis xyz="-0.6572 0.75372 0" />
+    <limit lower="-1.2" upper="1.2" effort="100" velocity="1" />
   </joint>
 
   <link name="diy_link4">
     <inertial>
-      <origin xyz="-0.0320231399899398 0.0188395340678356 0.0196130289979088" rpy="0 0 0" />
-      <mass value="0.0268787641612815" />
-      <inertia ixx="2.60267203023457E-06" ixy="1.49718719392197E-07" ixz="2.82922055894807E-06"
-               iyy="1.15913002533176E-05" iyz="-4.94293134081021E-08" izz="1.03912131946971E-05" />
+      <origin xyz="0.0360357170979314 0.0162093569051752 0.0156288374211208" rpy="0 0 0" />
+      <mass value="0.026431100728336" />
+      <inertia ixx="2.00577806117396E-06" ixy="-1.68101464286757E-06" ixz="5.29667968557728E-07"
+               iyy="1.09980691812644E-05" iyz="1.04901743658363E-07" izz="1.15473383556095E-05" />
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -546,13 +561,40 @@
       </geometry>
     </collision>
   </link>
-  <joint name="diy_joint4" type="revolute">
-    <origin xyz="-0.12194 -0.015927 0.044362" rpy="0 0 0" />
+  <joint name="diy_joint4" type="fixed">
+    <origin xyz="0.083867 0.052256 -0.024248" rpy="0 0 0" />
     <parent link="diy_link3" />
     <child link="diy_link4" />
-    <axis xyz="0.014315 0.99987 -0.0074203" />
-    <dynamics damping="0.13" friction="0.1"/>
-    <limit lower="-0.17" upper="1.4" effort="1.39" velocity="10.47" />
+    <axis xyz="0.047892 0.041759 0.99798" />
+    <limit lower="0.2" upper="2.3" effort="100" velocity="1" />
+  </joint>
+
+  <!-- FR DIY 足端 (sphere tip as separate contact body) -->
+  <link name="FR_diy_foot">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.04" />
+      <inertia ixx="9.6e-06" ixy="0" ixz="0" iyy="9.6e-06" iyz="0" izz="9.6e-06" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="package://go2_description/dae/foot.dae" scale="1.3 1.3 1.3" />
+      </geometry>
+      <material name="黑色足端_005-effect"><color rgba="0 0 0 1" /></material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://go2_description/dae/foot.dae" scale="1.3 1.3 1.3" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="FR_diy_foot_joint" type="fixed" dont_collapse="true">
+    <origin xyz="0.196 -0.045 0.0" rpy="1.5708 0 3.35" />
+    <parent link="diy_base_link" />
+    <child link="FR_diy_foot" />
+    <axis xyz="0 0 0" />
   </joint>
 
   <!-- ==================== 后左腿 RL (保留原版) ==================== -->
@@ -565,7 +607,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 3.1415 0" />
       <geometry>
-        <mesh filename="package://leg_manipulator/go2_description/dae/hip.dae" />
+        <mesh filename="package://go2_description/dae/hip.dae" />
       </geometry>
       <material name="深色橡胶_001-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
     <collision>
@@ -580,7 +622,6 @@
     <parent link="base" />
     <child link="RL_hip" />
     <axis xyz="1 0 0" />
-    <dynamics damping="0.5" friction="0.01"/>
     <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
   </joint>
   <link name="RL_hip_rotor">
@@ -604,7 +645,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://leg_manipulator/go2_description/dae/thigh.dae" />
+        <mesh filename="package://go2_description/dae/thigh.dae" />
       </geometry>
       <material name="深色橡胶_003-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material_009-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
     <collision>
@@ -619,7 +660,6 @@
     <parent link="RL_hip" />
     <child link="RL_thigh" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0.5" friction="0.01"/>
     <limit lower="-0.5236" upper="4.5379" effort="23.7" velocity="30.1" />
   </joint>
   <link name="RL_thigh_rotor">
@@ -643,7 +683,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://leg_manipulator/go2_description/dae/calf.dae" />
+        <mesh filename="package://go2_description/dae/calf.dae" />
       </geometry>
       <material name="黑色足端_005-effect"><color rgba="0 0 0 1" /></material><material name="深色橡胶_005-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material></visual>
     <collision>
@@ -658,15 +698,9 @@
     <parent link="RL_thigh" />
     <child link="RL_calf" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0.5" friction="0.01"/>
     <limit lower="-2.7227" upper="-0.83776" effort="45.43" velocity="15.70" />
   </joint>
   <link name="RL_calflower">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0.001" />
-      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
-    </inertial>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
@@ -681,11 +715,6 @@
     <axis xyz="0 0 0" />
   </joint>
   <link name="RL_calflower1">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0.001" />
-      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
-    </inertial>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
@@ -720,7 +749,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://leg_manipulator/go2_description/dae/foot.dae" />
+        <mesh filename="package://go2_description/dae/foot.dae" />
       </geometry>
       <material name="黑色足端_007-effect"><color rgba="0 0 0 1" /></material></visual>
     <collision>
@@ -747,7 +776,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="3.1415 3.1415 0" />
       <geometry>
-        <mesh filename="package://leg_manipulator/go2_description/dae/hip.dae" />
+        <mesh filename="package://go2_description/dae/hip.dae" />
       </geometry>
       <material name="深色橡胶_001-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
     <collision>
@@ -762,7 +791,6 @@
     <parent link="base" />
     <child link="RR_hip" />
     <axis xyz="1 0 0" />
-    <dynamics damping="0.5" friction="0.01"/>
     <limit lower="-1.0472" upper="1.0472" effort="23.7" velocity="30.1" />
   </joint>
   <link name="RR_hip_rotor">
@@ -786,7 +814,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://leg_manipulator/go2_description/dae/thigh_mirror.dae" />
+        <mesh filename="package://go2_description/dae/thigh_mirror.dae" />
       </geometry>
       <material name="深色橡胶_012-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material><material name="Material_011-effect"><color rgba="0.9 0.95 0.95 1" /></material></visual>
     <collision>
@@ -801,7 +829,6 @@
     <parent link="RR_hip" />
     <child link="RR_thigh" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0.5" friction="0.01"/>
     <limit lower="-0.5236" upper="4.5379" effort="23.7" velocity="30.1" />
   </joint>
   <link name="RR_thigh_rotor">
@@ -825,7 +852,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://leg_manipulator/go2_description/dae/calf_mirror.dae" />
+        <mesh filename="package://go2_description/dae/calf_mirror.dae" />
       </geometry>
       <material name="黑色足端_006-effect"><color rgba="0 0 0 1" /></material><material name="深色橡胶_007-effect"><color rgba="0.6717055 0.6924257 0.7742702 1" /></material></visual>
     <collision>
@@ -840,15 +867,9 @@
     <parent link="RR_thigh" />
     <child link="RR_calf" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0.5" friction="0.01"/>
     <limit lower="-2.7227" upper="-0.83776" effort="45.43" velocity="15.70" />
   </joint>
   <link name="RR_calflower">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0.001" />
-      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
-    </inertial>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
@@ -863,11 +884,6 @@
     <axis xyz="0 0 0" />
   </joint>
   <link name="RR_calflower1">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0.001" />
-      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
-    </inertial>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
@@ -902,7 +918,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="package://leg_manipulator/go2_description/dae/foot.dae" />
+        <mesh filename="package://go2_description/dae/foot.dae" />
       </geometry>
       <material name="黑色足端_007-effect"><color rgba="0 0 0 1" /></material></visual>
     <collision>
@@ -923,8 +939,8 @@
   <link name="imu">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0.001" />
-      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
     </inertial>
   </link>
   <joint name="imu_joint" type="fixed">
@@ -936,8 +952,8 @@
   <link name="radar">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0.001" />
-      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+      <mass value="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
     </inertial>
   </link>
   <joint name="radar_joint" type="fixed">
@@ -952,183 +968,6 @@
       <child link="front_camera" />
   </joint>
   <link name="front_camera">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0" />
-      <mass value="0.001" />
-      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
-    </inertial>
   </link>
-
-  <!-- ==================== ros2_control hardware interface ==================== -->
-  <ros2_control name="GazeboSimSystem" type="system">
-    <hardware>
-      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
-    </hardware>
-    <!-- FL leg -->
-    <joint name="FL_hip_joint">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="FL_thigh_joint">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="FL_calf_joint">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="FL_diy_joint1">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="FL_diy_joint2">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="FL_diy_joint3">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="FL_diy_joint4">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <!-- FR leg -->
-    <joint name="FR_hip_joint">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="FR_thigh_joint">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="FR_calf_joint">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="diy_joint1">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="diy_joint2">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="diy_joint3">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="diy_joint4">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <!-- RL leg -->
-    <joint name="RL_hip_joint">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="RL_thigh_joint">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="RL_calf_joint">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <!-- RR leg -->
-    <joint name="RR_hip_joint">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="RR_thigh_joint">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="RR_calf_joint">
-      <command_interface name="effort"/>
-      <state_interface name="position"/>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-  </ros2_control>
-
-  <!-- ==================== Gazebo Classic plugin ==================== -->
-  <gazebo>
-    <plugin filename="/tmp/gazebo_ros2_control_ws/install/gazebo_ros2_control/lib/libgazebo_ros2_control.so" name="gazebo_ros2_control">
-      <parameters>package://leg_manipulator/config/gazebo_controllers.yaml</parameters>
-    </plugin>
-  </gazebo>
-
-  <!-- ==================== Gazebo IMU sensor ==================== -->
-  <gazebo reference="imu">
-    <sensor name="imu_sensor" type="imu">
-      <always_on>true</always_on>
-      <update_rate>200</update_rate>
-      <imu>
-        <angular_velocity>
-          <x><noise type="gaussian"><mean>0</mean><stddev>0.0002</stddev></noise></x>
-          <y><noise type="gaussian"><mean>0</mean><stddev>0.0002</stddev></noise></y>
-          <z><noise type="gaussian"><mean>0</mean><stddev>0.0002</stddev></noise></z>
-        </angular_velocity>
-        <linear_acceleration>
-          <x><noise type="gaussian"><mean>0</mean><stddev>0.017</stddev></noise></x>
-          <y><noise type="gaussian"><mean>0</mean><stddev>0.017</stddev></noise></y>
-          <z><noise type="gaussian"><mean>0</mean><stddev>0.017</stddev></noise></z>
-        </linear_acceleration>
-      </imu>
-      <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
-        <ros>
-          <remapping>~/out:=imu/data</remapping>
-        </ros>
-        <initial_orientation_as_reference>false</initial_orientation_as_reference>
-        <frame_name>imu</frame_name>
-      </plugin>
-    </sensor>
-  </gazebo>
-
-  <!-- Friction -->
-  <gazebo reference="base"><mu1>0.8</mu1><mu2>0.8</mu2></gazebo>
-  <gazebo reference="RL_foot"><mu1>1.0</mu1><mu2>1.0</mu2><kp>1e6</kp><kd>1e2</kd></gazebo>
-  <gazebo reference="RR_foot"><mu1>1.0</mu1><mu2>1.0</mu2><kp>1e6</kp><kd>1e2</kd></gazebo>
-  <gazebo reference="FL_diy_base_link"><mu1>1.0</mu1><mu2>1.0</mu2><kp>1e6</kp><kd>1e2</kd></gazebo>
-  <gazebo reference="diy_base_link"><mu1>1.0</mu1><mu2>1.0</mu2><kp>1e6</kp><kd>1e2</kd></gazebo>
 
 </robot>

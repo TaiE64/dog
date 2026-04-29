@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+
+# Recorded demo videos (regenerable via walk_and_grasp.py --record)
+*.mp4
+
+# One-off debugging scripts (prefix with _diag_)
+_diag_*.py
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp

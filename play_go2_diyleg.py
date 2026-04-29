@@ -19,7 +19,7 @@ except ImportError:
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _MJCF_PATH = os.path.join(_HERE, "leg_manipulator", "mjcf", "go2_diyleg.xml")
-_ONNX_PATH = os.path.join(_HERE, "walk_model", "go2_diyleg_walk_policy_1700.onnx")
+_ONNX_PATH = os.path.join(_HERE, "walk_model", "go2_diyleg_walk_policy_6200.onnx")
 
 UDP_PORT = 9871
 
@@ -30,11 +30,13 @@ ISAAC_JOINT_NAMES = [
     "FL_calf_joint", "FR_calf_joint", "RL_calf_joint", "RR_calf_joint",
 ]
 
-# Default joint angle offsets (Isaac Lab order)
+# Default joint angle offsets (Isaac Lab order: FL FR RL RR per joint group).
+# Must match init_state.joint_pos in UNITREE_GO2_DIY_LEG_CFG (assets/robots/unitree.py).
+# Note: front calves are POSITIVE (DIY base_link orientation), rear calves negative.
 DEFAULT_OFFSETS = np.array([
-    0.0, 0.0, 0.0, 0.0,
-    0.543, 0.543, 0.905, 0.905,
-    -2.07, -2.07, -1.78, -1.78,
+    0.0,    0.0,    0.0,    0.0,     # hip:   FL FR RL RR
+    0.560,  0.560,  0.401,  0.401,   # thigh: FL FR RL RR
+    1.466,  1.466, -1.215, -1.215,   # calf:  FL FR RL RR
 ], dtype=np.float32)
 
 ANG_VEL_SCALE = 0.2
