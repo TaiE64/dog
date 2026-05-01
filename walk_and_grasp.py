@@ -429,8 +429,9 @@ class Vision:
 class ArmIK3:
     """Solve DIY joint1/2/3 to put FL_diy_link4 at a world target. Damped LS."""
 
-    def __init__(self, model: mujoco.MjModel, side: str = "FL"):
+    def __init__(self, model: mujoco.MjModel, side: str = "FL", ee_local_offset=None):
         self.model = model
+        self.ee_local_offset = np.array(ee_local_offset) if ee_local_offset is not None else None
         ee_body_name = f"{side}_diy_link4" if side == "FL" else "diy_link4"
         self.body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, ee_body_name)
         if self.body_id < 0:
@@ -470,6 +471,9 @@ class ArmIK3:
             mujoco.mj_kinematics(self.model, self._wdata)
             mujoco.mj_comPos(self.model, self._wdata)
             tip = self._wdata.body(self.body_id).xpos.copy()
+            if self.ee_local_offset is not None:
+                mat = self._wdata.body(self.body_id).xmat.reshape(3, 3)
+                tip += mat @ self.ee_local_offset
             err = target - tip
             mag = float(np.linalg.norm(err))
             last_err = mag
@@ -612,7 +616,9 @@ class GraspController:
 
         self.cmd_vel = np.zeros(3, dtype=np.float32)
         self.vision = Vision(model)
-        self.ik = ArmIK3(model, side="FL")
+        # Offset the EE tip 3.5cm forward from the pivot to reach the actual pinch point between the jaws
+        self.ee_local_offset = np.array([0.035, 0.0, 0.0], dtype=np.float32)
+        self.ik = ArmIK3(model, side="FL", ee_local_offset=self.ee_local_offset)
         self._model = model
 
         # Per-arm DIY default hold (joint 1/2/3 + joint4 OPEN at start)
@@ -772,10 +778,12 @@ class GraspController:
         )
 
     def _ee_tip_world(self, data):
-        """World position of FL_diy_link4's body origin (joint4 axis).
-        With j4 closed at J4_CLOSE the jaws straddle this point."""
-        return data.body(self._fl_ee_id).xpos.copy()
-
+        """World position of the true pinch point between the jaws."""
+        pivot = data.body(self._fl_ee_id).xpos.copy()
+        if self.ee_local_offset is not None:
+            mat = data.body(self._fl_ee_id).xmat.reshape(3, 3)
+            return pivot + mat @ self.ee_local_offset
+        return pivot
     def _slew_reach_pose(self, ik_q):
         """Cap per-tick joint-command change to JOINT_SLEW_RATE * dt.
         IK can flip between solution branches when residuals tie or the
