@@ -621,8 +621,8 @@ class GraspController:
         # Reach pose is computed lazily once we know the target height.
         # Default to floor height; gets recomputed when EXTEND is entered
         # so the arm adapts to floor / table / shelf-height objects.
-        self._reach_pose, self._ee_offset_body = self._compute_reach_pose(
-            model, target_world_z=0.05
+        self._reach_pose, self._ee_offset_body, self._reach_target_world = (
+            self._compute_reach_pose(model, target_world_z=0.05)
         )
         print(f"REACH_POSE (default, floor) = {self._reach_pose.round(3)}")
         print(f"EE offset in body frame    = {self._ee_offset_body.round(3)}m")
@@ -658,6 +658,9 @@ class GraspController:
         self._j1_cmd = float(J1_RETRACTED)
         # Previous SERVO IK output, for joint-space slew limiting.
         self._prev_reach_pose = self._reach_pose.copy()
+        # EXTEND task-space interpolation: capture EE world pos at phase entry,
+        # interpolate linearly toward _reach_target_world, IK each tick.
+        self._extend_ee_start: np.ndarray | None = None
         # Last arm target written to actuators; used to slew-limit j2/j3 across
         # phase transitions (e.g. LIFT_TEST → RETRY_BACKUP) so the arm doesn't
         # teleport from extended pose back to HOLD in a single tick.
@@ -724,7 +727,11 @@ class GraspController:
             print(
                 f"WARN: reach-pose IK residual {err:.3f}m at target_z={target_world_z:.3f} (unreachable?)"
             )
-        return reach_pose.astype(np.float32), ee_body.astype(np.float32)
+        return (
+            reach_pose.astype(np.float32),
+            ee_body.astype(np.float32),
+            target_world.astype(np.float32),
+        )
 
     # --- helpers ----
     def _compute_approach_pose(self, goal_world, base_pos):
@@ -1025,12 +1032,17 @@ class GraspController:
                 yaw_err = abs((target_yaw - base_yaw + np.pi) % (2 * np.pi) - np.pi)
                 if yaw_err < PRE_ALIGN_YAW_TOL:
                     # Now compute reach pose at this LIVE perpendicular pose.
-                    self._reach_pose, self._ee_offset_body = self._compute_reach_pose(
+                    (
+                        self._reach_pose,
+                        self._ee_offset_body,
+                        self._reach_target_world,
+                    ) = self._compute_reach_pose(
                         self._model,
                         target_world_z=float(self.goal_world[2]),
                         live_data=data,
                     )
                     self._prev_reach_pose = self._reach_pose.copy()
+                    self._extend_ee_start = self._ee_tip_world(data).copy()
                     print(
                         f"  reach pose for target z={self.goal_world[2]:.3f}: "
                         f"j={self._reach_pose.round(3)}, ee_body={self._ee_offset_body.round(3)}"
@@ -1040,12 +1052,17 @@ class GraspController:
                     print(
                         f"[PRE_ALIGN] timed out, yaw_err={yaw_err:.2f}rad → EXTEND anyway"
                     )
-                    self._reach_pose, self._ee_offset_body = self._compute_reach_pose(
+                    (
+                        self._reach_pose,
+                        self._ee_offset_body,
+                        self._reach_target_world,
+                    ) = self._compute_reach_pose(
                         self._model,
                         target_world_z=float(self.goal_world[2]),
                         live_data=data,
                     )
                     self._prev_reach_pose = self._reach_pose.copy()
+                    self._extend_ee_start = self._ee_tip_world(data).copy()
                     self.phase, self.phase_t = "EXTEND", 0.0
             elif self.phase == "EXTEND":
                 # All joints ramp simultaneously over EXTEND_RAMP_S.
@@ -1169,7 +1186,11 @@ class GraspController:
                     # — otherwise it's still the SERVO-end pose of the failed
                     # attempt, and the next EXTEND ramp would interpolate
                     # HOLD → that weird pose.
-                    self._reach_pose, self._ee_offset_body = self._compute_reach_pose(
+                    (
+                        self._reach_pose,
+                        self._ee_offset_body,
+                        self._reach_target_world,
+                    ) = self._compute_reach_pose(
                         self._model,
                         target_world_z=float(self.goal_world[2]),
                         live_data=data,
@@ -1269,12 +1290,28 @@ class GraspController:
             # Hold-like phases: arm folded back to leg-tuck.
             fl_diy_targets[:3] = FL_DIY_HOLD_123
         elif self.phase == "EXTEND":
-            # All three joints ramp simultaneously over EXTEND_RAMP_S so the
-            # arm unfolds smoothly. (Earlier "j1 first then j2/j3" produced
-            # an awkward intermediate pose where j1 was fully extended but
-            # j2/j3 still at HOLD — arm stuck out forward+up.)
+            # Task-space interpolation: EE follows a straight line in world
+            # coords from its HOLD-pose position to the reach target, with a
+            # smoothstep ease. IK each tick yields the joint command.
+            # j1_max ramps from J1_RETRACTED → J1_GRASP_MAX in sync, so the
+            # slider extends gradually instead of snapping to the cap on the
+            # first tick (which used to push j2/j3 straight to their final
+            # values, producing the "lift first" artifact).
             a = float(np.clip(self.phase_t / EXTEND_RAMP_S, 0.0, 1.0))
-            fl_diy_targets[:3] = (1 - a) * FL_DIY_HOLD_123 + a * self._reach_pose
+            s = a * a * (3.0 - 2.0 * a)
+            ee_target = (
+                1 - s
+            ) * self._extend_ee_start + s * self._reach_target_world
+            j1_max_ramp = (1 - s) * J1_RETRACTED + s * J1_GRASP_MAX
+            ik_q, _ = self.ik.solve(
+                data,
+                ee_target,
+                max_iter=80,
+                damp=0.03,
+                warm_only=True,
+                j1_max=j1_max_ramp,
+            )
+            fl_diy_targets[:3] = ik_q
         elif self.phase == "LIFT_TEST":
             a = float(np.clip(self.phase_t / LIFT_RAMP_S, 0.0, 1.0))
             fl_diy_targets[:3] = (
@@ -1284,12 +1321,10 @@ class GraspController:
             fl_diy_targets[:3] = self._reach_pose
 
         # joint1 prismatic slider:
-        # - EXTEND: ramp HOLD→reach_pose[0] in sync with j2/j3.
+        # - EXTEND: task-space IK above already produced fl_diy_targets[0].
         # - SERVO/CLOSE/LIFT_TEST: IK direct.
         # - DONE/non-grasp: slew back to retracted (10cm) at 3cm/s.
         if self.phase == "EXTEND":
-            a = float(np.clip(self.phase_t / EXTEND_RAMP_S, 0.0, 1.0))
-            fl_diy_targets[0] = (1 - a) * J1_RETRACTED + a * float(self._reach_pose[0])
             self._j1_cmd = float(fl_diy_targets[0])
         elif self.phase in ("SERVO", "CLOSE"):
             fl_diy_targets[0] = float(self._reach_pose[0])
