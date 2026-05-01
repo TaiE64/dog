@@ -1,0 +1,17 @@
+<mujoco model="basket">
+  <asset>
+    <texture name="basket_tex" type="2d" file="../basket/shopping-basket-texture.png"/>
+    <material name="basket_mat" texture="basket_tex" specular="0.1" shininess="0.2"/>
+    <mesh name="shopping-basket" content_type="model/obj" file="../basket/shopping-basket.obj" scale="0.15 0.15 0.15"/>
+  </asset>
+
+  <worldbody>
+    <body name="target_cube" pos="0.92 0.05 0.0615">
+      <inertial pos="0 0 0.014" mass="5.0" diaginertia="0.012 0.012 0.012"/>
+      <joint name="target_cube_free" type="free"/>
+      <geom pos="0 0 -0.049" quat="0.707105 0.707108 0 0" type="mesh" contype="0" conaffinity="0" group="1" density="0" material="basket_mat" mesh="shopping-basket"/>
+      <geom name="target_handle" size="0.012 0.040" pos="0 0 0.068" quat="0.707105 0.707108 0 0" type="cylinder" contype="0" conaffinity="0" group="1" density="0" rgba="0.95 0.05 0.05 1"/>
+      <geom name="basket_col" size="0.0735 0.075 0.0615" type="box" rgba="0 0 0 0" friction="3.0 0.20 0.05"/>
+    </body>
+  </worldbody>
+</mujoco>

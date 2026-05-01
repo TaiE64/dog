@@ -27,24 +27,46 @@ _MJCF_OUT = os.path.join(_HERE, "go2_diyleg.xml")
 # manipulator load. Training froze these joints; deploying with motion is
 # precisely the robustness check.
 DIY_JOINT_NAMES = {
-    "FL_diy_joint1", "FL_diy_joint2", "FL_diy_joint3", "FL_diy_joint4",
-    "diy_joint1", "diy_joint2", "diy_joint3", "diy_joint4",
+    "FL_diy_joint1",
+    "FL_diy_joint2",
+    "FL_diy_joint3",
+    "FL_diy_joint4",
+    "diy_joint1",
+    "diy_joint2",
+    "diy_joint3",
+    "diy_joint4",
 }
 
 WALK_JOINTS = [
-    "FL_hip_joint", "FR_hip_joint", "RL_hip_joint", "RR_hip_joint",
-    "FL_thigh_joint", "FR_thigh_joint", "RL_thigh_joint", "RR_thigh_joint",
-    "FL_calf_joint", "FR_calf_joint", "RL_calf_joint", "RR_calf_joint",
+    "FL_hip_joint",
+    "FR_hip_joint",
+    "RL_hip_joint",
+    "RR_hip_joint",
+    "FL_thigh_joint",
+    "FR_thigh_joint",
+    "RL_thigh_joint",
+    "RR_thigh_joint",
+    "FL_calf_joint",
+    "FR_calf_joint",
+    "RL_calf_joint",
+    "RR_calf_joint",
 ]
 
 # Must match init_state.joint_pos in UNITREE_GO2_DIY_LEG_CFG. Front-leg calf
 # joints drive the DIY base_link (range [0.99, 2.82]), so they're POSITIVE.
 DEFAULT_OFFSETS = {
-    "FL_hip_joint": 0.0, "FR_hip_joint": 0.0, "RL_hip_joint": 0.0, "RR_hip_joint": 0.0,
-    "FL_thigh_joint": 0.560, "FR_thigh_joint": 0.560,
-    "RL_thigh_joint": 0.401, "RR_thigh_joint": 0.401,
-    "FL_calf_joint": 1.466, "FR_calf_joint": 1.466,
-    "RL_calf_joint": -1.215, "RR_calf_joint": -1.215,
+    "FL_hip_joint": 0.0,
+    "FR_hip_joint": 0.0,
+    "RL_hip_joint": 0.0,
+    "RR_hip_joint": 0.0,
+    "FL_thigh_joint": 0.560,
+    "FR_thigh_joint": 0.560,
+    "RL_thigh_joint": 0.401,
+    "RR_thigh_joint": 0.401,
+    "FL_calf_joint": 1.466,
+    "FR_calf_joint": 1.466,
+    "RL_calf_joint": -1.215,
+    "RR_calf_joint": -1.215,
 }
 
 # Walking joint PD gains (Unitree-typical for Go2)
@@ -79,17 +101,20 @@ def sanitize_urdf(src: str, dst: str) -> None:
             '<sphere radius="0.025"/>',
             s,
         )
+
     # Only swap inside <collision> blocks; visuals keep the OBJ mesh.
     out, i = [], 0
     while True:
         j = text.find("<collision", i)
         if j < 0:
-            out.append(text[i:]); break
+            out.append(text[i:])
+            break
         out.append(text[i:j])
         k = text.find("</collision>", j)
         if k < 0:
-            out.append(text[j:]); break
-        out.append(_replace_foot_collision(text[j:k + len("</collision>")]))
+            out.append(text[j:])
+            break
+        out.append(_replace_foot_collision(text[j : k + len("</collision>")]))
         i = k + len("</collision>")
     text = "".join(out)
 
@@ -104,10 +129,10 @@ def sanitize_urdf(src: str, dst: str) -> None:
     # Inject a <mujoco> compile-hint block right before </robot>.
     # meshdir is relative to this URDF; URDF lives in mjcf/, meshes live one level up.
     mj_block = (
-        '  <mujoco>\n'
+        "  <mujoco>\n"
         '    <compiler meshdir="../" balanceinertia="true" discardvisual="false" '
         'strippath="false" fusestatic="false"/>\n'
-        '  </mujoco>\n'
+        "  </mujoco>\n"
     )
     text = text.replace("</robot>", mj_block + "</robot>")
 
@@ -124,6 +149,7 @@ def compile_to_mjcf(urdf_path: str) -> str:
 def _save_xml_to_string(model) -> str:
     """mj_saveLastXML writes to a file; round-trip via tempfile."""
     import tempfile
+
     with tempfile.NamedTemporaryFile("r", suffix=".xml", delete=False) as f:
         tmp = f.name
     mujoco.mj_saveLastXML(tmp, model)
@@ -149,7 +175,8 @@ def post_edit(mjcf_text: str) -> str:
     if option is None:
         option = ET.SubElement(root, "option")
         # place option after compiler for readability
-        root.remove(option); root.insert(list(root).index(compiler) + 1, option)
+        root.remove(option)
+        root.insert(list(root).index(compiler) + 1, option)
     option.set("timestep", "0.002")
     option.set("integrator", "implicitfast")
     option.set("iterations", "10")
@@ -158,7 +185,8 @@ def post_edit(mjcf_text: str) -> str:
     if root.find("default") is None:
         default = ET.Element("default")
         geom_d = ET.SubElement(default, "geom")
-        geom_d.set("contype", "1"); geom_d.set("conaffinity", "1")
+        geom_d.set("contype", "1")
+        geom_d.set("conaffinity", "1")
         geom_d.set("friction", "0.8 0.02 0.01")
         # insert after option
         idx = list(root).index(option) + 1
@@ -170,50 +198,112 @@ def post_edit(mjcf_text: str) -> str:
         visual = ET.Element("visual")
         idx = list(root).index(root.find("default")) + 1
         root.insert(idx, visual)
-    ET.SubElement(visual, "headlight", {
-        "diffuse": "0.6 0.6 0.6", "ambient": "0.3 0.3 0.3", "specular": "0 0 0",
-    })
+    ET.SubElement(
+        visual,
+        "headlight",
+        {
+            "diffuse": "0.6 0.6 0.6",
+            "ambient": "0.3 0.3 0.3",
+            "specular": "0 0 0",
+        },
+    )
     ET.SubElement(visual, "rgba", {"haze": "0.15 0.25 0.35 1"})
-    ET.SubElement(visual, "global", {
-        "azimuth": "120", "elevation": "-20",
-        "offwidth": "1280", "offheight": "720",
-    })
+    ET.SubElement(
+        visual,
+        "global",
+        {
+            "azimuth": "120",
+            "elevation": "-20",
+            "offwidth": "1280",
+            "offheight": "720",
+        },
+    )
 
     # textures + materials for the scene (added to <asset>)
     asset = root.find("asset")
     if asset is None:
         asset = ET.SubElement(root, "asset")
-    ET.SubElement(asset, "texture", {
-        "type": "skybox", "builtin": "gradient",
-        "rgb1": "0.3 0.5 0.7", "rgb2": "0 0 0",
-        "width": "512", "height": "3072",
-    })
-    ET.SubElement(asset, "texture", {
-        "type": "2d", "name": "groundplane", "builtin": "checker",
-        "mark": "edge", "rgb1": "0.2 0.3 0.4", "rgb2": "0.1 0.2 0.3",
-        "markrgb": "0.8 0.8 0.8", "width": "300", "height": "300",
-    })
-    ET.SubElement(asset, "material", {
-        "name": "groundplane", "texture": "groundplane", "texuniform": "true",
-        "texrepeat": "5 5", "reflectance": "0.2",
-    })
+    ET.SubElement(
+        asset,
+        "texture",
+        {
+            "type": "skybox",
+            "builtin": "gradient",
+            "rgb1": "0.3 0.5 0.7",
+            "rgb2": "0 0 0",
+            "width": "512",
+            "height": "3072",
+        },
+    )
+    ET.SubElement(
+        asset,
+        "texture",
+        {
+            "type": "2d",
+            "name": "groundplane",
+            "builtin": "checker",
+            "mark": "edge",
+            "rgb1": "0.2 0.3 0.4",
+            "rgb2": "0.1 0.2 0.3",
+            "markrgb": "0.8 0.8 0.8",
+            "width": "300",
+            "height": "300",
+        },
+    )
+    ET.SubElement(
+        asset,
+        "material",
+        {
+            "name": "groundplane",
+            "texture": "groundplane",
+            "texuniform": "true",
+            "texrepeat": "5 5",
+            "reflectance": "0.2",
+        },
+    )
+    # hex weight mesh. MuJoCo auto-aligns mesh principal-inertia axes on load,
+    # which fortuitously puts: hex prism axis -> body X, vertex direction ->
+    # body Y, flat direction -> body Z. So the geom sits coaxial with the bar
+    # (body X = bar after the keyframe yaw) with flats up/down (won't roll).
+    ET.SubElement(
+        asset,
+        "mesh",
+        {
+            "name": "hex_weight",
+            "file": "/home/taie/Desktop/dog/mjc/hex_weight.stl",
+            # STL prism axis is original Z (60 mm). Halve it -> 30 mm thick.
+            "scale": "1 1 0.5",
+        },
+    )
 
     # --- worldbody: add floor + light + IMU site, plus free joint on base ---
     worldbody = root.find("worldbody")
     assert worldbody is not None, "MJCF missing <worldbody>"
 
     # textured checker floor
-    floor = ET.Element("geom", {
-        "name": "floor", "type": "plane", "size": "0 0 0.05",
-        "material": "groundplane", "friction": "0.8 0.02 0.01",
-    })
+    floor = ET.Element(
+        "geom",
+        {
+            "name": "floor",
+            "type": "plane",
+            "size": "0 0 0.05",
+            "material": "groundplane",
+            "friction": "0.8 0.02 0.01",
+        },
+    )
     worldbody.insert(0, floor)
     # primary directional light (sun)
-    light = ET.Element("light", {
-        "pos": "0 0 1.5", "dir": "0 0 -1", "directional": "true",
-        "diffuse": "0.8 0.8 0.8", "specular": "0.3 0.3 0.3",
-        "castshadow": "true",
-    })
+    light = ET.Element(
+        "light",
+        {
+            "pos": "0 0 1.5",
+            "dir": "0 0 -1",
+            "directional": "true",
+            "diffuse": "0.8 0.8 0.8",
+            "specular": "0.3 0.3 0.3",
+            "castshadow": "true",
+        },
+    )
     worldbody.insert(1, light)
 
     # find base body and add freejoint + IMU site
@@ -235,10 +325,15 @@ def post_edit(mjcf_text: str) -> str:
     base.insert(0, fj)
 
     # IMU site at imu link offset (-0.02557 0 0.04232 from base)
-    imu_site = ET.Element("site", {
-        "name": "imu", "pos": "-0.02557 0 0.04232", "size": "0.01",
-        "rgba": "1 0 0 1",
-    })
+    imu_site = ET.Element(
+        "site",
+        {
+            "name": "imu",
+            "pos": "-0.02557 0 0.04232",
+            "size": "0.01",
+            "rgba": "1 0 0 1",
+        },
+    )
     # insert after freejoint
     base.insert(1, imu_site)
 
@@ -257,12 +352,15 @@ def post_edit(mjcf_text: str) -> str:
         # the target falls below this camera's FOV — that's a real-world
         # limitation. Vision caches the most recent detection's world
         # coordinate so the controller continues to act on it.
-        cam = ET.Element("camera", {
-            "name": "head_cam",
-            "pos": "0.05 0 0.0",
-            "xyaxes": "0 -1 0  0.574 0 0.819",
-            "fovy": "75",
-        })
+        cam = ET.Element(
+            "camera",
+            {
+                "name": "head_cam",
+                "pos": "0.05 0 0.0",
+                "xyaxes": "0 -1 0  0.574 0 0.819",
+                "fovy": "75",
+            },
+        )
         head.append(cam)
 
     # --- platform: static table where the dumbbell rests ---
@@ -281,68 +379,85 @@ def post_edit(mjcf_text: str) -> str:
     #                       bar at an angle, lower jaw slides along bar
     #                       instead of scooping under → fails to clamp
     # Default y=0.05 stays in the reliable zone with a slight curved walk.
-    platform = ET.Element("body", {
-        "name": "target_platform",
-        "pos": f"1.0 0.05 {PLATFORM_HALF[2]:.3f}",
-    })
-    ET.SubElement(platform, "geom", {
-        "name": "platform_geom",
-        "type": "box",
-        "size": f"{PLATFORM_HALF[0]:.3f} {PLATFORM_HALF[1]:.3f} {PLATFORM_HALF[2]:.3f}",
-        "rgba": "0.55 0.40 0.25 1",   # brown — distinct from red target
-        "friction": "1.0 0.05 0.01",
-    })
+    platform = ET.Element(
+        "body",
+        {
+            "name": "target_platform",
+            "pos": f"1.0 0.05 {PLATFORM_HALF[2]:.3f}",
+        },
+    )
+    ET.SubElement(
+        platform,
+        "geom",
+        {
+            "name": "platform_geom",
+            "type": "box",
+            "size": f"{PLATFORM_HALF[0]:.3f} {PLATFORM_HALF[1]:.3f} {PLATFORM_HALF[2]:.3f}",
+            "rgba": "0.55 0.40 0.25 1",  # brown — distinct from red target
+            "friction": "1.0 0.05 0.01",
+        },
+    )
     worldbody.append(platform)
 
-    # --- target_cube: red dumbbell as the grasping target ---
-    # Sits on top of the platform. Two spherical weights + thin handle so
-    # the gripper can naturally close around the middle.
-    DUMBBELL_REST_Z = PLATFORM_TOP_Z + 0.04  # platform top + box half-height (8cm cubes)
-    cube = ET.Element("body", {
-        "name": "target_cube",
-        "pos": f"0.92 0.05 {DUMBBELL_REST_Z:.3f}",
-    })
+    # --- target_cube: hex dumbbell (mirrors mjc/dumbbell_hex.urdf) ---
+    # Handle 0.2 kg + two hex weights 2.4 kg each = 5.0 kg total.
+    # Long axis along body X; weights' flat hex faces face ±Z so it sits flat.
+    DUMBBELL_REST_Z = PLATFORM_TOP_Z + 0.045  # hex flat-to-flat half = ~0.0433
+    cube = ET.Element(
+        "body",
+        {
+            "name": "target_cube",
+            "pos": f"0.92 0.05 {DUMBBELL_REST_Z:.3f}",
+            "euler": "0 0 1.5707963",  # rotate so handle ends up along world Y
+        },
+    )
     ET.SubElement(cube, "freejoint", {"name": "target_cube_free"})
-    # Handle: thin cylinder along Y axis (so dumbbell's long axis is Y in
-    # body's local frame; with default identity orientation this is world Y,
-    # which is "left/right" of the robot — gripper closing along that axis
-    # works either way).
-    # End "plates" — thin in Y (along handle axis) but tall/wide in X and Z.
-    # Same height as before (8cm tall) so handle stays elevated, but only
-    # 2.4cm thick in the handle axis so most of the dumbbell length is the
-    # exposed handle (more graspable area for the vision algorithm).
-    ET.SubElement(cube, "geom", {
-        "name": "target_handle",
-        "type": "cylinder",
-        "size": "0.008 0.08",
-        # Bar raised 1.5cm relative to cube body origin: handle now sits in
-        # the upper portion of the plates. Gripper comes in from above and
-        # has clearance to wrap around the bar without colliding with the
-        # plate tops first.
-        "fromto": "0 -0.08 0.015  0 0.08 0.015",
-        "rgba": "0.95 0.05 0.05 1",
-        "mass": "0.04",
-        "friction": "3.0 0.20 0.05",
-    })
-    # Plates: X half=4cm, Y half=1.2cm (thin!), Z half=4cm
-    ET.SubElement(cube, "geom", {
-        "name": "target_weight_l",
-        "type": "box",
-        "size": "0.04 0.012 0.04",
-        "pos": "0 0.10 0",
-        "rgba": "0.95 0.05 0.05 1",
-        "mass": "0.10",
-        "friction": "3.0 0.20 0.05",
-    })
-    ET.SubElement(cube, "geom", {
-        "name": "target_weight_r",
-        "type": "box",
-        "size": "0.04 0.012 0.04",
-        "pos": "0 -0.10 0",
-        "rgba": "0.95 0.05 0.05 1",
-        "mass": "0.10",
-        "friction": "3.0 0.20 0.05",
-    })
+    ET.SubElement(
+        cube,
+        "geom",
+        {
+            "name": "target_handle",
+            "type": "cylinder",
+            "size": "0.010 0.075",
+            "fromto": "-0.075 0 0.012  0.075 0 0.012",
+            "rgba": "0.95 0.05 0.05 1",
+            "mass": "0.02",
+            "friction": "3.0 0.20 0.05",
+        },
+    )
+    # Hex weights, coaxial with bar. Explicit identity quat OVERRIDES MuJoCo's
+    # auto-alignment (which would otherwise rotate the hex axis off the bar).
+    # With identity quat, mesh axes (X=hex axis, Y=vertex, Z=flat) align with
+    # body axes — hex axis along body X = bar; flats along body Z = world Z
+    # (up/down) so the hex rests on a side flat face and won't roll.
+    ET.SubElement(
+        cube,
+        "geom",
+        {
+            "name": "target_weight_l",
+            "type": "mesh",
+            "mesh": "hex_weight",
+            "pos": "-0.090 0 0",
+            "quat": "0.5 -0.5 0.5 -0.5",
+            "rgba": "0.95 0.05 0.05 1",
+            "mass": "0.09",
+            "friction": "3.0 0.20 0.05",
+        },
+    )
+    ET.SubElement(
+        cube,
+        "geom",
+        {
+            "name": "target_weight_r",
+            "type": "mesh",
+            "mesh": "hex_weight",
+            "pos": "0.090 0 0",
+            "quat": "0.5 -0.5 0.5 -0.5",
+            "rgba": "0.95 0.05 0.05 1",
+            "mass": "0.09",
+            "friction": "3.0 0.20 0.05",
+        },
+    )
     worldbody.append(cube)
 
     # --- actuators ---
@@ -351,17 +466,29 @@ def post_edit(mjcf_text: str) -> str:
         root.remove(tag)
     actuator = ET.SubElement(root, "actuator")
     for j in WALK_JOINTS:
-        ET.SubElement(actuator, "position", {
-            "name": f"{j}_actuator", "joint": j,
-            "kp": str(WALK_KP), "kv": str(WALK_KD),
-            "forcerange": "-50 50",
-        })
+        ET.SubElement(
+            actuator,
+            "position",
+            {
+                "name": f"{j}_actuator",
+                "joint": j,
+                "kp": str(WALK_KP),
+                "kv": str(WALK_KD),
+                "forcerange": "-50 50",
+            },
+        )
     for j in sorted(DIY_JOINT_NAMES):
-        ET.SubElement(actuator, "position", {
-            "name": f"{j}_actuator", "joint": j,
-            "kp": str(DIY_KP), "kv": str(DIY_KD),
-            "forcerange": "-20 20",
-        })
+        ET.SubElement(
+            actuator,
+            "position",
+            {
+                "name": f"{j}_actuator",
+                "joint": j,
+                "kp": str(DIY_KP),
+                "kv": str(DIY_KD),
+                "forcerange": "-20 20",
+            },
+        )
 
     # --- sensors ---
     for tag in list(root.findall("sensor")):
@@ -369,7 +496,9 @@ def post_edit(mjcf_text: str) -> str:
     sensor = ET.SubElement(root, "sensor")
     ET.SubElement(sensor, "gyro", {"name": "gyro", "site": "imu"})
     ET.SubElement(sensor, "accelerometer", {"name": "accel", "site": "imu"})
-    ET.SubElement(sensor, "framequat", {"name": "imu_quat", "objtype": "site", "objname": "imu"})
+    ET.SubElement(
+        sensor, "framequat", {"name": "imu_quat", "objtype": "site", "objname": "imu"}
+    )
 
     # --- keyframe (standing pose with policy-default joint angles) ---
     for tag in list(root.findall("keyframe")):
@@ -381,10 +510,15 @@ def post_edit(mjcf_text: str) -> str:
     # We'll let MuJoCo reorder for us by loading the freshly built model and
     # reading the joint order.
     placeholder_qpos = ["0", "0", "0.40", "1", "0", "0", "0"]  # populated below
-    ET.SubElement(keyframe, "key", {
-        "name": "home", "qpos": " ".join(placeholder_qpos),
-        # ctrl will be set below
-    })
+    ET.SubElement(
+        keyframe,
+        "key",
+        {
+            "name": "home",
+            "qpos": " ".join(placeholder_qpos),
+            # ctrl will be set below
+        },
+    )
 
     return ET.tostring(root, encoding="unicode")
 
@@ -426,8 +560,10 @@ def fill_keyframe(mjcf_text: str) -> str:
     if cube_jid >= 0:
         cube_adr = model.jnt_qposadr[cube_jid]
         # Dumbbell rests on 5cm-top platform; with 8cm box-height ends,
-        # cube body center at z = 0.05 + 0.04 = 0.09
-        qpos[cube_adr:cube_adr + 7] = [0.92, 0.05, 0.09, 1.0, 0.0, 0.0, 0.0]
+        # cube body center at z = platform_top 0.05 + hex flat-half 0.045.
+        # quat = 90° around Z so the bar lies along world Y (perpendicular to
+        # robot forward), letting the front-mounted gripper close across it.
+        qpos[cube_adr : cube_adr + 7] = [0.92, 0.05, 0.095, 0.70710678, 0.0, 0.0, 0.70710678]
 
     # ctrl vector matches actuator order
     ctrl = [0.0] * model.nu

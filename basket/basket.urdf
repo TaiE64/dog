@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<robot name="basket">
+
+  <!-- MuJoCo extension: keep visual geoms (default discards them) -->
+  <mujoco>
+    <compiler discardvisual="false"/>
+  </mujoco>
+
+  <!-- Dummy world link so the basket gets a floating root joint -->
+  <link name="world"/>
+
+  <link name="target_cube">
+    <!-- Visual: scaled basket mesh, rotated to stand upright -->
+    <visual>
+      <origin rpy="1.5708 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="shopping-basket.obj" scale="0.2 0.2 0.2"/>
+      </geometry>
+      <material name="wicker">
+        <color rgba="0.6 0.4 0.2 1.0"/>
+      </material>
+    </visual>
+
+    <!-- Visual: red handle marker on the mesh handle peak (vision target) -->
+    <visual>
+      <origin xyz="0 0 0.20" rpy="1.5708 0 0"/>
+      <geometry>
+        <cylinder length="0.10" radius="0.005"/>
+      </geometry>
+      <material name="red">
+        <color rgba="0.95 0.05 0.05 1.0"/>
+      </material>
+    </visual>
+
+    <!-- Collision: AABB box around the scaled basket -->
+    <collision>
+      <origin xyz="0 0 0"/>
+      <geometry>
+        <box size="0.196 0.20 0.164"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0 0 0.018"/>
+      <mass value="0.3"/>
+      <inertia ixx="0.002" ixy="0.0" ixz="0.0" iyy="0.002" iyz="0.0" izz="0.002"/>
+    </inertial>
+  </link>
+
+  <!-- Floating joint = MuJoCo freejoint named target_cube_free -->
+  <joint name="target_cube_free" type="floating">
+    <parent link="world"/>
+    <child  link="target_cube"/>
+  </joint>
+
+</robot>

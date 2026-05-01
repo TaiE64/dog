@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+<!--
+  六角哑铃 URDF 模型
+  总质量: 5.0 kg (手柄 0.2 kg + 两端配重各 2.4 kg)
+  手柄: 圆柱 ⌀30 × 150 mm
+  配重盘: 正六棱柱, 外接圆半径 50 mm × 长 60 mm (跨棱 100mm, 跨边 ~86.6mm)
+  长轴沿 X, 六角配重盘的 flat 面朝 ±Z, 平放不会滚
+-->
+<robot name="hex_dumbbell">
+
+  <material name="handle_grip">
+    <color rgba="0.15 0.15 0.18 1.0"/>
+  </material>
+
+  <material name="weight_iron">
+    <color rgba="0.08 0.08 0.10 1.0"/>
+  </material>
+
+  <!-- ========== 手柄 ========== -->
+  <link name="handle">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 1.5707963 0"/>
+      <geometry>
+        <cylinder length="0.15" radius="0.015"/>
+      </geometry>
+      <material name="handle_grip"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 1.5707963 0"/>
+      <geometry>
+        <cylinder length="0.15" radius="0.015"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.2"/>
+      <inertia ixx="2.25e-5"  ixy="0.0" ixz="0.0"
+               iyy="3.86e-4"  iyz="0.0"
+               izz="3.86e-4"/>
+    </inertial>
+  </link>
+
+  <!-- ========== 左侧六角配重 ========== -->
+  <link name="left_weight">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="hex_weight.stl" scale="1 1 1"/>
+      </geometry>
+      <material name="weight_iron"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="hex_weight.stl" scale="1 1 1"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="2.4"/>
+      <!-- 六棱柱: Ixx=(5/12)mR², Iyy=Izz=(5/24)mR²+(1/12)mL²
+           m=2.4kg, R=0.05m, L=0.06m -->
+      <inertia ixx="2.5e-3"   ixy="0.0" ixz="0.0"
+               iyy="1.97e-3"  iyz="0.0"
+               izz="1.97e-3"/>
+    </inertial>
+  </link>
+
+  <joint name="handle_to_left_weight" type="fixed">
+    <parent link="handle"/>
+    <child  link="left_weight"/>
+    <origin xyz="-0.105 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ========== 右侧六角配重 ========== -->
+  <link name="right_weight">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="hex_weight.stl" scale="1 1 1"/>
+      </geometry>
+      <material name="weight_iron"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="hex_weight.stl" scale="1 1 1"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="2.4"/>
+      <inertia ixx="2.5e-3"   ixy="0.0" ixz="0.0"
+               iyy="1.97e-3"  iyz="0.0"
+               izz="1.97e-3"/>
+    </inertial>
+  </link>
+
+  <joint name="handle_to_right_weight" type="fixed">
+    <parent link="handle"/>
+    <child  link="right_weight"/>
+    <origin xyz="0.105 0 0" rpy="0 0 0"/>
+  </joint>
+
+</robot>
