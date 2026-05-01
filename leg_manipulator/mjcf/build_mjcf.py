@@ -72,7 +72,7 @@ DEFAULT_OFFSETS = {
 # Walking joint PD gains (Unitree-typical for Go2)
 WALK_KP, WALK_KD = 25.0, 0.5
 # DIY joint PD gains (lighter — they just track random targets)
-DIY_KP, DIY_KD = 5.0, 0.2
+DIY_KP, DIY_KD = 200.0, 5.0
 
 
 def sanitize_urdf(src: str, dst: str) -> None:
@@ -118,11 +118,14 @@ def sanitize_urdf(src: str, dst: str) -> None:
         i = k + len("</collision>")
     text = "".join(out)
 
-    # Flip DIY joints fixed->revolute
+    # Flip DIY joints fixed->revolute, except joint1 which is the prismatic
+    # slider on the real hardware (URDF "fixed" placeholder + linear effort/
+    # velocity limits make the design intent clear).
     for jname in DIY_JOINT_NAMES:
+        target_type = "prismatic" if jname.endswith("joint1") else "revolute"
         text = re.sub(
             rf'(<joint\s+name="{re.escape(jname)}"\s+type=)"fixed"',
-            r'\1"revolute"',
+            rf'\1"{target_type}"',
             text,
         )
 
@@ -271,8 +274,8 @@ def post_edit(mjcf_text: str) -> str:
         {
             "name": "hex_weight",
             "file": "/home/taie/Desktop/dog/mjc/hex_weight.stl",
-            # STL prism axis is original Z (60 mm). Halve it -> 30 mm thick.
-            "scale": "1 1 0.5",
+            # STL prism axis is original Z (60 mm). Scale to ~20 mm thick.
+            "scale": "1 1 0.33",
         },
     )
 
@@ -437,7 +440,7 @@ def post_edit(mjcf_text: str) -> str:
             "name": "target_weight_l",
             "type": "mesh",
             "mesh": "hex_weight",
-            "pos": "-0.090 0 0",
+            "pos": "-0.085 0 0",
             "quat": "0.5 -0.5 0.5 -0.5",
             "rgba": "0.95 0.05 0.05 1",
             "mass": "0.09",
@@ -451,7 +454,7 @@ def post_edit(mjcf_text: str) -> str:
             "name": "target_weight_r",
             "type": "mesh",
             "mesh": "hex_weight",
-            "pos": "0.090 0 0",
+            "pos": "0.085 0 0",
             "quat": "0.5 -0.5 0.5 -0.5",
             "rgba": "0.95 0.05 0.05 1",
             "mass": "0.09",
@@ -478,15 +481,27 @@ def post_edit(mjcf_text: str) -> str:
             },
         )
     for j in sorted(DIY_JOINT_NAMES):
+        # joint1 is the prismatic slider on the FL/FR diy arms. Its axis has
+        # a ~60% vertical component once transformed to world, so gravity on
+        # the link2/3/4 chain (~0.15 kg + grasped object) generates ~1 N of
+        # along-axis force pulling the slider fully extended. Default kp=5
+        # only produces ≤0.5 N (kp * max_error), letting the slider sag —
+        # the arm then has to do all reach work via j2/j3, producing the
+        # "weird raise" during EXTEND. Bump j1 to kp=400, kv=4 (force-range
+        # widened) so it actually holds commanded position against gravity.
+        is_slider = j.endswith("joint1")
+        kp_val = 20000.0 if is_slider else DIY_KP
+        kv_val = 200.0 if is_slider else DIY_KD
+        forcerange = "-300 300" if is_slider else "-100 100"
         ET.SubElement(
             actuator,
             "position",
             {
                 "name": f"{j}_actuator",
                 "joint": j,
-                "kp": str(DIY_KP),
-                "kv": str(DIY_KD),
-                "forcerange": "-20 20",
+                "kp": str(kp_val),
+                "kv": str(kv_val),
+                "forcerange": forcerange,
             },
         )
 

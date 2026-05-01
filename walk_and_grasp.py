@@ -1098,8 +1098,15 @@ class GraspController:
                     warm_only=True,
                     j1_max=J1_GRASP_MAX,
                 )
-                self._reach_pose = self._slew_reach_pose(ik_q)
                 self._last_ik_err = float(ik_err)
+                # Only adopt the IK solution once body is close enough that
+                # the arm can actually reach. While body is still walking up,
+                # the IK "best-effort" output stretches j2 toward extreme
+                # values to span the residual gap, producing a visible
+                # shoulder wind-up; just hold the EXTEND-end pose until the
+                # body has arrived (ik_err drops below 6 cm).
+                if ik_err < 0.06:
+                    self._reach_pose = self._slew_reach_pose(ik_q)
                 d_ee_to_target = float(np.linalg.norm(ik_target - ee_pos))
                 if d_ee_to_target < self._servo_best_d:
                     self._servo_best_d = d_ee_to_target
@@ -1298,28 +1305,15 @@ class GraspController:
             # Hold-like phases: arm folded back to leg-tuck.
             fl_diy_targets[:3] = FL_DIY_HOLD_123
         elif self.phase == "EXTEND":
-            # Task-space interpolation: EE follows a straight line in world
-            # coords from its HOLD-pose position to the reach target, with a
-            # smoothstep ease. IK each tick yields the joint command.
-            # j1_max ramps from J1_RETRACTED → J1_GRASP_MAX in sync, so the
-            # slider extends gradually instead of snapping to the cap on the
-            # first tick (which used to push j2/j3 straight to their final
-            # values, producing the "lift first" artifact).
+            # Joint-space lerp from HOLD → reach_pose with smoothstep.
+            # Joint-space (vs task-space EE) guarantees each joint moves
+            # monotonically along the lerp — no IK-induced N-shape on j2.
+            # Empirically this kills the residual "j2 swings through 0
+            # then back" artifact that task-space IK produces with the
+            # prismatic slider.
             a = float(np.clip(self.phase_t / EXTEND_RAMP_S, 0.0, 1.0))
             s = a * a * (3.0 - 2.0 * a)
-            ee_target = (
-                1 - s
-            ) * self._extend_ee_start + s * self._reach_target_world
-            j1_max_ramp = (1 - s) * J1_RETRACTED + s * J1_GRASP_MAX
-            ik_q, _ = self.ik.solve(
-                data,
-                ee_target,
-                max_iter=80,
-                damp=0.03,
-                warm_only=True,
-                j1_max=j1_max_ramp,
-            )
-            fl_diy_targets[:3] = ik_q
+            fl_diy_targets[:3] = (1 - s) * FL_DIY_HOLD_123 + s * self._reach_pose
         elif self.phase == "LIFT_TEST":
             a = float(np.clip(self.phase_t / LIFT_RAMP_S, 0.0, 1.0))
             fl_diy_targets[:3] = (
