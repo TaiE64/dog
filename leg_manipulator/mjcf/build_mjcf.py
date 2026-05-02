@@ -72,7 +72,7 @@ DEFAULT_OFFSETS = {
 # Walking joint PD gains (Unitree-typical for Go2)
 WALK_KP, WALK_KD = 25.0, 0.5
 # DIY joint PD gains (lighter — they just track random targets)
-DIY_KP, DIY_KD = 200.0, 5.0
+DIY_KP, DIY_KD = 25.0, 0.5
 
 
 def sanitize_urdf(src: str, dst: str) -> None:

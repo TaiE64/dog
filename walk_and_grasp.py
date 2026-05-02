@@ -616,8 +616,11 @@ class GraspController:
 
         self.cmd_vel = np.zeros(3, dtype=np.float32)
         self.vision = Vision(model)
-        # Offset the EE tip 3.5cm forward from the pivot to reach the actual pinch point between the jaws
-        self.ee_local_offset = np.array([0.035, 0.0, 0.0], dtype=np.float32)
+        # Offset the EE tip to the actual pinch point:
+        # X: 3.5cm forward from pivot
+        # Y: -1.5cm towards the lower jaw (link3) to be in the gap
+        # Z: +1.5cm to be vertically centered between the jaws
+        self.ee_local_offset = np.array([0.035, -0.05, 0.015], dtype=np.float32)
         self.ik = ArmIK3(model, side="FL", ee_local_offset=self.ee_local_offset)
         self._model = model
 
@@ -1512,6 +1515,11 @@ def main():
         metavar=("W", "H"),
         help="Recorded video resolution",
     )
+    p.add_argument(
+        "--record-head",
+        metavar="FILE",
+        help="Record the robot head_cam view (same as rerun's RGB pane) to MP4",
+    )
     args = p.parse_args()
 
     print("=" * 64)
@@ -1580,8 +1588,30 @@ def main():
         frame = rec_renderer.render()
         rec_writer.append_data(frame)
 
+    # --record-head: same head_cam frame the controller sees + rerun streams.
+    head_renderer = None
+    head_writer = None
+    last_head_t = -1.0
+    if args.record_head:
+        import imageio as _iio
+        head_renderer = mujoco.Renderer(model, height=480, width=640)
+        head_writer = _iio.get_writer(
+            args.record_head, fps=int(args.record_fps), codec="libx264", quality=8
+        )
+        print(f"[record-head] writing 640x480 @ {args.record_fps}fps → {args.record_head}")
+
+    def _capture_head():
+        nonlocal last_head_t
+        if head_writer is None:
+            return
+        if (data.time - last_head_t) < (1.0 / float(args.record_fps)):
+            return
+        last_head_t = data.time
+        head_renderer.update_scene(data, camera="head_cam")
+        head_writer.append_data(head_renderer.render())
+
     try:
-        if args.headless or rec_path:
+        if args.headless or rec_path or args.record_head:
             n = int(args.duration / model.opt.timestep)
             for _ in range(n):
                 mujoco.mj_step(model, data)
@@ -1589,6 +1619,7 @@ def main():
                     _rerun_log(rr, ctrl, data)
                     last_rerun_t = data.time
                 _capture_frame()
+                _capture_head()
             print(f"\nfinal phase = {ctrl.phase}")
             print(f"grasp_success = {ctrl.grasp_success}")
             print(
@@ -1622,6 +1653,9 @@ def main():
         if rec_writer is not None:
             rec_writer.close()
             print(f"[record] saved {rec_path}")
+        if head_writer is not None:
+            head_writer.close()
+            print(f"[record-head] saved {args.record_head}")
 
 
 if __name__ == "__main__":
